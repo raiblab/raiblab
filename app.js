@@ -183,6 +183,7 @@ function loginModal(){
   setTimeout(()=>$("#lg-email").focus(),30);
 }
 const COURSES=["박사과정","박사수료","박사"];
+const courseClass=c=>({"박사":"c-doc","박사수료":"c-abd","박사과정":"c-cand"})[c]||"";
 function memberFields(m){return `
     <div class="row2"><label for="m-name">성명<input id="m-name" name="name" required value="${esc(m.name)}"></label>
     <label for="m-course">과정<select id="m-course" name="course">${COURSES.map(c=>`<option${c===m.course?" selected":""}>${c}</option>`).join("")}</select></label></div>
@@ -356,7 +357,7 @@ function renderMembers(){
   if(S.canEdit)btns+=`<button class="btn ghost" id="m-add">회원 추가</button>`;
   const inner=!S.loaded?`<div class="panel"><div class="empty">불러오는 중…</div></div>`
     :!list.length?`<div class="panel"><div class="empty">${q?"검색 결과가 없습니다.":"아직 등록된 회원이 없습니다."}</div></div>`
-    :`<div class="tablewrap"><table><thead><tr><th>번호</th><th>기수</th><th>성명</th><th>과정</th><th>입학</th><th>직장·직위</th><th>연구분야</th><th>이메일</th><th></th></tr></thead><tbody>${list.map((m,i)=>`<tr><td class="num">${i+1}</td><td class="num" style="color:var(--ink);font-weight:600">${m.gen?esc(m.gen)+"기":"—"}</td><td style="white-space:nowrap;font-weight:600">${esc(m.name)}${m.userId&&m.userId===S.myId?' <span class="kind">나</span>':""}</td><td><span class="kind">${esc(m.course)}</span></td><td class="num">${esc(m.year)}</td><td>${esc(m.org)}</td><td>${esc(m.field)}</td><td style="white-space:nowrap">${esc(m.email)}</td><td class="num">${(S.canEdit||(m.userId&&m.userId===S.myId))?`<button class="btn sm ghost" data-mem="${m.id}">수정</button>`:""}</td></tr>`).join("")}</tbody></table></div>`;
+    :`<div class="tablewrap"><table><thead><tr><th>번호</th><th>기수</th><th>성명</th><th>과정</th><th>입학</th><th>직장·직위</th><th>연구분야</th><th>이메일</th><th></th></tr></thead><tbody>${list.map((m,i)=>`<tr><td class="num">${i+1}</td><td class="num" style="color:var(--ink);font-weight:600">${m.gen?esc(m.gen)+"기":"—"}</td><td style="white-space:nowrap;font-weight:600">${esc(m.name)}${m.userId&&m.userId===S.myId?' <span class="kind">나</span>':""}</td><td><span class="kind ${courseClass(m.course)}">${esc(m.course)}</span></td><td class="num">${esc(m.year)}</td><td>${esc(m.org)}</td><td>${esc(m.field)}</td><td style="white-space:nowrap">${esc(m.email)}</td><td class="num">${(S.canEdit||(m.userId&&m.userId===S.myId))?`<button class="btn sm ghost" data-mem="${m.id}">수정</button>`:""}</td></tr>`).join("")}</tbody></table></div>`;
   el.innerHTML=`<div class="sec-h"><div><h2>회원</h2><p>레이브랩 회원 명단입니다. 회원가입을 하면 자동으로 명단에 추가됩니다.${S.loaded?` 현재 ${S.members.length}명`:""}</p></div><div class="toolbar"><input class="search" id="q-members" type="search" placeholder="이름·과정·직장 검색" value="${esc(S.q.members||"")}">${btns}</div></div>${inner}`;
   const qi=$("#q-members");qi.oninput=()=>{S.q.members=qi.value;renderMembers()};
   if(keep){qi.focus();qi.setSelectionRange(qi.value.length,qi.value.length)}

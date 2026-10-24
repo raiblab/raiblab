@@ -189,3 +189,10 @@ img{max-width:100%}
 .hero .facts dd{font-weight:600}
 .hero h1{margin:10px 0 22px}
 .hero .chips{margin-top:24px}
+/* 회원 과정 색: 박사 주황 / 수료 파랑 / 과정 회색 */
+:root{--doc-bg:#fde8d4;--doc-fg:#a8470a;--abd-bg:#dbe8fb;--abd-fg:#1f56a8;--cand-bg:#e8eaee;--cand-fg:#5b6270}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--doc-bg:#4a2a12;--doc-fg:#f6b37a;--abd-bg:#173057;--abd-fg:#9cc0f5;--cand-bg:#2a313d;--cand-fg:#b3bac6}}
+:root[data-theme="dark"]{--doc-bg:#4a2a12;--doc-fg:#f6b37a;--abd-bg:#173057;--abd-fg:#9cc0f5;--cand-bg:#2a313d;--cand-fg:#b3bac6}
+.kind.c-doc{background:var(--doc-bg);color:var(--doc-fg);font-weight:600}
+.kind.c-abd{background:var(--abd-bg);color:var(--abd-fg);font-weight:600}
+.kind.c-cand{background:var(--cand-bg);color:var(--cand-fg)}
