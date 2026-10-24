@@ -174,3 +174,8 @@ body{margin:0}
 img{max-width:100%}
 [hidden]{display:none!important}
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+/* 메뉴를 본문 폭(엠블럼 왼쪽 끝 ~ 소개 오른쪽 끝)에 맞춰 고르게 배치 */
+@media (min-width:861px){
+  nav.tabs .wrap{justify-content:space-between}
+  nav.tabs a{padding-left:4px;padding-right:4px;font-size:15px}
+}
