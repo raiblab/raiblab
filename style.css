@@ -183,3 +183,9 @@ img{max-width:100%}
 .hero>div:last-child{display:flex;flex-direction:column;justify-content:center}
 .hero .emblem{height:100%;padding:22px 26px}
 @media (max-width:860px){.hero .emblem{height:auto}}
+/* 소개 표 글씨 키움 */
+.hero .facts{font-size:17.5px;gap:12px 22px;margin-top:4px}
+.hero .facts dt{font-size:15.5px;align-self:center}
+.hero .facts dd{font-weight:600}
+.hero h1{margin:10px 0 22px}
+.hero .chips{margin-top:24px}
