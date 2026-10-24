@@ -196,3 +196,7 @@ img{max-width:100%}
 .kind.c-doc{background:var(--doc-bg);color:var(--doc-fg);font-weight:600}
 .kind.c-abd{background:var(--abd-bg);color:var(--abd-fg);font-weight:600}
 .kind.c-cand{background:var(--cand-bg);color:var(--cand-fg)}
+/* 두 엠블럼을 같은 높이로 */
+.hero .emblem{display:flex;align-items:center;justify-content:center;gap:14px;padding:20px}
+.hero .emblem img{width:auto;max-width:none;height:clamp(96px,12.5vw,150px);object-fit:contain}
+.hero .emblem .smu{padding-right:16px}
