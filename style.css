@@ -49,7 +49,7 @@ main{padding-block:28px 64px}
 .view[hidden]{display:none}
 
 /* hero */
-.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:40px;align-items:center;padding-block:12px 36px;border-bottom:1px solid var(--line)}
+.hero{display:grid;grid-template-columns:minmax(0,.82fr) minmax(0,1fr);gap:44px;align-items:stretch;padding-block:12px 36px;border-bottom:1px solid var(--line)}
 .emblem{background:#fff;border:1px solid var(--line);border-radius:6px;padding:18px;display:grid;place-items:center}
 .emblem{grid-template-columns:minmax(0,.62fr) minmax(0,1fr);gap:22px;align-items:center}
 .emblem img{width:100%;display:block}
@@ -179,3 +179,7 @@ img{max-width:100%}
   nav.tabs .wrap{justify-content:space-between}
   nav.tabs a{padding-left:4px;padding-right:4px;font-size:15px}
 }
+/* 엠블럼 상자를 오른쪽 소개 높이에 맞춤 */
+.hero>div:last-child{display:flex;flex-direction:column;justify-content:center}
+.hero .emblem{height:100%;padding:22px 26px}
+@media (max-width:860px){.hero .emblem{height:auto}}
