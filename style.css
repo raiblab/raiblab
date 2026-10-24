@@ -49,7 +49,7 @@ main{padding-block:28px 64px}
 .view[hidden]{display:none}
 
 /* hero */
-.hero{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:40px;align-items:center;padding-block:12px 36px;border-bottom:1px solid var(--line)}
+.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:40px;align-items:center;padding-block:12px 36px;border-bottom:1px solid var(--line)}
 .emblem{background:#fff;border:1px solid var(--line);border-radius:6px;padding:18px;display:grid;place-items:center}
 .emblem{grid-template-columns:minmax(0,.62fr) minmax(0,1fr);gap:22px;align-items:center}
 .emblem img{width:100%;display:block}
