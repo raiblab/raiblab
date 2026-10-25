@@ -61,9 +61,9 @@ async function loadAuth(session){
   if(sb&&S.myId){const {data}=await sb.from("admins").select("user_id").eq("user_id",S.myId).maybeSingle();S.canEdit=!!data}
 }
 function must(res){if(res&&res.error)throw res.error;return res}
-/* 새로 추가한 열(phone, section)이 DB에 아직 없으면 그 열만 빼고 다시 저장 */
-async function save(run,row,cols){let r=await run(row);
-  if(r.error&&cols.some(c=>String(r.error.message||"").includes(c))){const d=Object.assign({},row);cols.forEach(c=>delete d[c]);r=await run(d)}
+/* 새로 추가한 열(phone, section)이 DB에 없으면 빼고 저장하지 않고 안내 */
+async function save(run,row,cols){const r=await run(row);
+  if(r.error&&cols.some(c=>String(r.error.message||"").includes(c)))throw {message:"데이터베이스 업데이트가 아직 안 되었습니다. Supabase SQL Editor에서 2026-10-25 업데이트 SQL을 실행한 뒤 다시 저장해 주세요."};
   return must(r)}
 
 /* ---------- 탭 ---------- */
