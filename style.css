@@ -212,3 +212,37 @@ img{max-width:100%}
 .sub-h{font-size:15px;margin:28px 0 10px}
 .sub-h small{color:var(--muted);font-weight:500;margin-left:4px}
 h2 small.adm{font-size:11px;vertical-align:middle;margin-left:6px}
+
+/* ---------- 팝업 공지 ---------- */
+.pop{position:fixed;z-index:15;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;box-shadow:0 18px 48px rgba(8,14,24,.30);display:flex;flex-direction:column;overflow:hidden;min-width:200px}
+.pop.preview{z-index:25;outline:2px dashed var(--gold);outline-offset:3px}
+.pop-h{flex:none;background:var(--navy);color:var(--on-navy);padding:11px 16px;font-weight:600;font-size:15px;cursor:move;user-select:none;-webkit-user-select:none;touch-action:none;display:flex;gap:10px;align-items:center}
+.pop-h span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pop-h em{font-style:normal;font-size:11.5px;font-weight:500;color:#d9b864;white-space:nowrap}
+.pop-b{flex:1 1 auto;overflow:auto;min-height:0;overscroll-behavior:contain}
+.pop-b img{display:block;width:100%;height:auto}
+.pop-b .tx{padding:16px 18px;white-space:pre-wrap;line-height:1.75;font-size:14.5px;overflow-wrap:anywhere}
+.pop-b .more{display:inline-block;margin:0 18px 16px;font-size:13.5px;font-weight:600;color:var(--navy-2)}
+.pop-b img + .more{margin-top:14px}
+.pop-f{flex:none;display:flex;justify-content:space-between;align-items:stretch;border-top:1px solid var(--line);background:var(--soft)}
+.pop-f button{background:none;border:0;font:inherit;font-size:13px;color:var(--muted);padding:10px 14px;cursor:pointer;display:inline-flex;gap:7px;align-items:center;min-height:42px}
+.pop-f button:hover:not(:disabled){color:var(--ink)}
+.pop-f button:disabled{cursor:default}
+.pop-f .box{width:14px;height:14px;border:1.5px solid currentColor;border-radius:3px;flex:none}
+.pop.preview .pop-f{padding-right:22px}
+.pop .grip{position:absolute;right:0;bottom:0;width:22px;height:22px;cursor:nwse-resize;touch-action:none;background:linear-gradient(135deg,transparent 52%,var(--gold) 52%)}
+.lead-s{color:var(--muted);font-size:14px;margin:0 0 16px}
+.form .lbl{font-size:13px;color:var(--muted);font-weight:500;margin-bottom:6px}
+.form fieldset.geo{border:1px solid var(--line);border-radius:6px;padding:12px 14px 14px;margin:0;display:grid;gap:12px;min-width:0}
+.form fieldset.geo legend{font-size:13px;color:var(--muted);font-weight:600;padding:0 6px}
+.row4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:560px){.row4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kind.pst-on{background:var(--abd-bg);color:var(--abd-fg);font-weight:600}
+.kind.pst-soon{background:var(--doc-bg);color:var(--doc-fg)}
+.kind.pst-off{background:var(--cand-bg);color:var(--cand-fg)}
+
+/* ---------- 정회원 전용 글 ---------- */
+.lk{margin-right:5px;font-size:.9em}
+.card .ph.lockph{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-size:30px}
+.card .ph.lockph small{font-family:var(--f-body,inherit);font-size:13px;letter-spacing:.04em}
+.kind.lockk{background:var(--doc-bg);color:var(--doc-fg);font-weight:600}

@@ -29,35 +29,41 @@ const BOARDS={
 const TABS=[["home","홈"],["greeting","교수님 인사말"],["chair","회장 인사말"],["officers","임원·회원"],["research","연구실적"],["conference","학술대회"],["news","연구실 동정"],["edu","미래교육원"],["golf","친목도모"]];
 
 /* ---------- 상태 ---------- */
-const S={posts:[],pages:{},officers:[],members:[],admins:[],users:[],usersOk:false,loaded:false,f:{},session:null,myId:null,myEmail:"",canEdit:false,q:{}};
-let current="home";
+const S={popups:[],popupsOk:false,unlocked:{},posts:[],pages:{},officers:[],members:[],admins:[],users:[],usersOk:false,loaded:false,f:{},session:null,myId:null,myEmail:"",canEdit:false,q:{}};
+let current="home";let popShown=false;
 const myMember=()=>S.myId?S.members.find(m=>m.userId===S.myId):null;
 const canWrite=()=>!!myMember()||S.canEdit;
 
 /* ---------- DB ↔ 화면 변환 ---------- */
-const toPost=r=>({id:r.id,board:r.board,title:r.title||"",body:r.body||"",date:r.date||"",place:r.place||"",kind:r.kind||"",year:r.year||"",authors:r.authors||"",venue:r.venue||"",source:r.source||"",link:r.link||"",authorName:r.author_name||"",authorId:r.author_id||"",photos:Array.isArray(r.photos)?r.photos:[],createdAt:r.created_at});
+const toPost=r=>({id:r.id,board:r.board,title:r.title||"",body:r.body||"",date:r.date||"",place:r.place||"",kind:r.kind||"",year:r.year||"",authors:r.authors||"",venue:r.venue||"",source:r.source||"",link:r.link||"",authorName:r.author_name||"",authorId:r.author_id||"",photos:Array.isArray(r.photos)?r.photos:[],locked:!!r.locked,createdAt:r.created_at});
 const fromPost=d=>({title:d.title,body:nz(d.body),date:nz(d.date),place:nz(d.place),kind:nz(d.kind),year:num(d.year),authors:nz(d.authors),venue:nz(d.venue),source:nz(d.source),link:nz(d.link),author_name:nz(d.authorName),photos:d.photos||[]});
 const toOfficer=r=>({id:r.id,section:r.section||"임원",term:r.term||"",period:r.period||"",role:r.role||"",name:r.name||"",note:r.note||"",termOrder:r.term_order});
 const toMember=r=>({id:r.id,userId:r.user_id||"",name:r.name||"",phone:r.phone||"",gen:r.gen||"",course:r.course||"",year:r.year||"",email:r.email||"",org:r.org||"",field:r.field||"",joinedAt:r.joined_at});
 
 async function loadAll(){
   if(!sb){S.loaded=true;render();return}
-  const [p,pg,o,m]=await Promise.all([
+  const [p,pg,o,m,pu]=await Promise.all([
     sb.from("posts").select("*").order("created_at",{ascending:false}).limit(1000),
     sb.from("pages").select("*"),
     sb.from("officers").select("*"),
-    S.session?sb.from("members").select("*"):Promise.resolve({data:[]})
+    S.session?sb.from("members").select("*"):Promise.resolve({data:[]}),
+    sb.from("popups").select("*").order("created_at",{ascending:false})
   ]);
+  S.popupsOk=!pu.error;S.popups=pu.error?[]:(pu.data||[]);
   S.posts=(p.data||[]).map(toPost);
   S.pages={};(pg.data||[]).forEach(r=>S.pages[r.key]=r);
   S.officers=(o.data||[]).map(toOfficer);
   S.members=(m.data||[]).map(toMember);
   S.admins=[];
   S.users=[];S.usersOk=false;
-  if(S.canEdit){const [a,u]=await Promise.all([sb.from("admins").select("user_id"),sb.rpc("admin_list_users")]);
+  if(S.canEdit){const [a,u,l]=await Promise.all([sb.from("admins").select("user_id"),sb.rpc("admin_list_users"),sb.from("post_locks").select("post_id,body,photos")]);
     S.admins=(a.data||[]).map(r=>r.user_id);
-    if(!u.error){S.users=u.data||[];S.usersOk=true}}
+    if(!u.error){S.users=u.data||[];S.usersOk=true}
+    /* 관리자는 비밀글 내용을 그대로 봅니다 */
+    const L={};(l.data||[]).forEach(r=>L[r.post_id]=r);
+    S.posts.forEach(p=>{const r=L[p.id];if(p.locked&&r){p.body=r.body||"";p.photos=Array.isArray(r.photos)?r.photos:[];p.lockLoaded=true}})}
   S.loaded=true;render();
+  if(!popShown){popShown=true;showPopups()}
 }
 async function loadAuth(session){
   S.session=session||null;S.myId=session?session.user.id:null;S.myEmail=session?session.user.email:"";S.canEdit=false;
@@ -65,8 +71,9 @@ async function loadAuth(session){
 }
 function must(res){if(res&&res.error)throw res.error;return res}
 /* 새로 추가한 열(phone, section)이 DB에 없으면 빼고 저장하지 않고 안내 */
-async function save(run,row,cols){const r=await run(row);
-  if(r.error&&cols.some(c=>String(r.error.message||"").includes(c)))throw {message:"데이터베이스 업데이트가 아직 안 되었습니다. Supabase SQL Editor에서 2026-10-25 업데이트 SQL을 실행한 뒤 다시 저장해 주세요."};
+const NEED_SQL="데이터베이스 업데이트가 아직 안 되었습니다. Supabase SQL Editor에서 update-popup-lock.sql 을 실행한 뒤 다시 저장해 주세요.";
+async function save(run,row,cols,msg){const r=await run(row);
+  if(r.error&&cols.some(c=>String(r.error.message||"").includes(c)))throw {message:msg||"데이터베이스 업데이트가 아직 안 되었습니다. Supabase SQL Editor에서 2026-10-25 업데이트 SQL을 실행한 뒤 다시 저장해 주세요."};
   return must(r)}
 
 /* ---------- 탭 ---------- */
@@ -96,8 +103,9 @@ function render(){
 function renderWho(){
   const w=$("#who");const mem=myMember();const adm=S.canEdit?'<span class="adm">관리자</span>':"";
   if(S.session){
-    w.innerHTML=`${adm}<button class="hbtn" id="h-me">${esc(mem?mem.name+"님":"내 정보")}</button><button class="hbtn" id="h-out">로그아웃</button>`;
+    w.innerHTML=`${adm}${S.canEdit?'<button class="hbtn" id="h-pop">팝업 관리</button>':""}<button class="hbtn" id="h-me">${esc(mem?mem.name+"님":"내 정보")}</button><button class="hbtn" id="h-out">로그아웃</button>`;
     $("#h-me").onclick=()=>mem?editMember(mem,true):editMember({},true);
+    const hp=$("#h-pop");hp&&(hp.onclick=popupManager);
     $("#h-out").onclick=async()=>{await sb.auth.signOut();toast("로그아웃했습니다")};
   }else{
     w.innerHTML=`<button class="hbtn" id="h-login">로그인</button><button class="hbtn solid" id="h-join">회원가입</button>`;
@@ -109,7 +117,7 @@ function renderHome(){
   const HB=["news","conference","research","edu","golf"];
   $("#home-grid").innerHTML=HB.map((b,i)=>{
     const list=postsOf(b).sort((a,c)=>sortKey(c).localeCompare(sortKey(a))).slice(0,5);
-    const items=list.length?`<ul class="mini">${list.map(p=>`<li><a href="#${b}" data-open="${p.id}">${esc(p.title)}</a><time>${fmt(p.date||p.createdAt)}</time></li>`).join("")}</ul>`:`<div class="empty">아직 등록된 글이 없습니다.</div>`;
+    const items=list.length?`<ul class="mini">${list.map(p=>`<li><a href="#${b}" data-open="${p.id}">${p.locked?'<span class="lk" aria-label="정회원 전용">🔒</span>':""}${esc(p.title)}</a><time>${fmt(p.date||p.createdAt)}</time></li>`).join("")}</ul>`:`<div class="empty">아직 등록된 글이 없습니다.</div>`;
     return `<div class="panel${HB.length%2&&i===HB.length-1?" wide":""}"><h3>${BOARDS[b].name}<a href="#${b}">전체 보기 →</a></h3>${loadingOr(items)}</div>`;
   }).join("");
 }
@@ -147,10 +155,10 @@ function renderBoard(b){
   else if(!list.length)inner=`<div class="panel"><div class="empty">${q?"검색 결과가 없습니다.":"아직 등록된 글이 없습니다."+(canWrite()?" ‘글쓰기’로 첫 글을 올려 주세요.":"")}</div></div>`;
   else if(cfg.layout==="cards"){
     list.sort((a,c)=>sortKey(c).localeCompare(sortKey(a)));
-    inner=`<div class="cards">${list.map(p=>{const ps=p.photos;return `<button class="card" data-open="${p.id}">${ps.length?`<div class="ph" style="background-image:url('${esc(ps[0].url)}')">${ps.length>1?`<span class="n">사진 ${ps.length}장</span>`:""}</div>`:`<div class="ph none">RAIB</div>`}<div class="cb">${p.kind?`<span class="kind">${esc(p.kind)}</span>`:""}<div class="cm">${fmt(p.date||p.createdAt)}${p.place?" · "+esc(p.place):""}</div><div class="ct">${esc(p.title)}</div>${p.body?`<div class="cx">${esc(p.body)}</div>`:""}</div></button>`}).join("")}</div>`;
+    inner=`<div class="cards">${list.map(p=>{const ps=p.photos;return `<button class="card" data-open="${p.id}">${ps.length?`<div class="ph" style="background-image:url('${esc(ps[0].url)}')">${ps.length>1?`<span class="n">사진 ${ps.length}장</span>`:""}</div>`:p.locked?`<div class="ph none lockph"><span>🔒</span><small>정회원 전용</small></div>`:`<div class="ph none">RAIB</div>`}<div class="cb">${p.locked?`<span class="kind lockk">🔒 정회원 전용</span>`:""}${p.kind?`<span class="kind">${esc(p.kind)}</span>`:""}<div class="cm">${fmt(p.date||p.createdAt)}${p.place?" · "+esc(p.place):""}</div><div class="ct">${esc(p.title)}</div>${p.body&&!p.locked?`<div class="cx">${esc(p.body)}</div>`:""}</div></button>`}).join("")}</div>`;
   }else{
     const years={};list.forEach(p=>{const y=p.year||"연도 미기재";(years[y]=years[y]||[]).push(p)});
-    inner=Object.keys(years).sort((a,c)=>String(c).localeCompare(String(a))).map(y=>`<div class="year-h">${esc(y)}</div><div class="tablewrap"><table><thead><tr><th>구분</th><th>제목</th><th>저자·참여</th><th>게재지·발주기관</th></tr></thead><tbody>${years[y].map(p=>`<tr class="row" data-open="${p.id}"><td><span class="kind">${esc(p.kind)}</span></td><td style="font-weight:600">${esc(p.title)}</td><td>${esc(p.authors)}</td><td>${esc(p.venue)}</td></tr>`).join("")}</tbody></table></div>`).join("");
+    inner=Object.keys(years).sort((a,c)=>String(c).localeCompare(String(a))).map(y=>`<div class="year-h">${esc(y)}</div><div class="tablewrap"><table><thead><tr><th>구분</th><th>제목</th><th>저자·참여</th><th>게재지·발주기관</th></tr></thead><tbody>${years[y].map(p=>`<tr class="row" data-open="${p.id}"><td><span class="kind">${esc(p.kind)}</span></td><td style="font-weight:600">${p.locked?'<span class="lk">🔒</span>':""}${esc(p.title)}</td><td>${esc(p.authors)}</td><td>${esc(p.venue)}</td></tr>`).join("")}</tbody></table></div>`).join("");
   }
   el.innerHTML=`<div class="sec-h"><div><h2>${cfg.name}</h2><p>${cfg.desc}</p></div><div class="toolbar"><input class="search" id="q-${b}" type="search" placeholder="검색" value="${esc(S.q[b]||"")}">${canWrite()?`<button class="btn" id="w-${b}">글쓰기</button>`:(S.session?"":`<button class="btn ghost" id="w-login">로그인하고 글쓰기</button>`)}</div></div>${cfg.filter?`<div class="ftabs">${[""].concat(cfg.fields.find(f=>f[0]===cfg.filter)[3]).map(o=>`<button type="button" data-f="${esc(o)}"${o===fv?' aria-pressed="true"':""}>${o?esc(o):"전체"} <small>${o?postsOf(b).filter(p=>p[cfg.filter]===o).length:postsOf(b).length}</small></button>`).join("")}</div>`:""}${inner}`;
   el.querySelectorAll("[data-f]").forEach(x=>x.onclick=()=>{S.f[b]=x.dataset.f;renderBoard(b)});
@@ -165,12 +173,13 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-open]");if
   viewPost(p)});
 
 /* ---------- 모달 ---------- */
-function modal(html){const r=$("#modal-root");r.innerHTML=`<div class="overlay" id="ov"><div class="modal" role="dialog" aria-modal="true">${html}</div></div>`;
+function modal(html){dropPreview();const r=$("#modal-root");r.innerHTML=`<div class="overlay" id="ov"><div class="modal" role="dialog" aria-modal="true">${html}</div></div>`;
   $("#ov").addEventListener("click",e=>{if(e.target.id==="ov")close()});return r.querySelector(".modal")}
-function close(){$("#modal-root").innerHTML=""}
+function close(){dropPreview();$("#modal-root").innerHTML=""}
+function dropPreview(){document.querySelectorAll(".pop.preview").forEach(x=>x.remove())}
 document.addEventListener("keydown",e=>{if(e.key==="Escape")close()});
 function toast(m){const t=document.createElement("div");t.className="toast";t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2400)}
-function mine(p){return S.canEdit||(S.myId&&p.authorId===S.myId)}
+function mine(p){return S.canEdit||(!p.locked&&S.myId&&p.authorId===S.myId)}
 function errMsg(e){const m=(e&&(e.message||e.error_description||e.code))||"오류";
   if(/Invalid login credentials/i.test(m))return"이메일 또는 비밀번호가 맞지 않습니다.";
   if(/already registered|already been registered/i.test(m))return"이미 가입된 이메일입니다. 로그인해 주세요.";
@@ -258,8 +267,9 @@ const MAXPH=20;
 
 /* ---------- 글 보기·쓰기 ---------- */
 function viewPost(p){
+  if(p.locked&&!S.canEdit&&!p.lockLoaded){const u=S.unlocked[p.id];if(!u)return unlockModal(p);p=Object.assign({},p,u,{lockLoaded:true})}
   const cfg=BOARDS[p.board];
-  const meta=[cfg.name,p.kind,p.year,p.date&&fmt(p.date),p.place,p.authors,p.venue,p.authorName&&"작성 "+p.authorName,p.createdAt&&"등록 "+fmt(p.createdAt)].filter(Boolean);
+  const meta=[cfg.name,p.locked&&"🔒 정회원 전용",p.kind,p.year,p.date&&fmt(p.date),p.place,p.authors,p.venue,p.authorName&&"작성 "+p.authorName,p.createdAt&&"등록 "+fmt(p.createdAt)].filter(Boolean);
   let link="";if(p.link&&/^https?:\/\//i.test(p.link))link=`<p><a href="${esc(p.link)}" target="_blank" rel="noopener">원문·자료 보기 ↗</a></p>`;
   const m=modal(`<h2>${esc(p.title)}</h2><div class="meta">${meta.map(x=>`<span>${esc(x)}</span>`).join("")}</div>${gallery(p.photos)}<div class="content">${esc(p.body)}</div>${link}
   <div class="actions" id="acts">${mine(p)?`<button class="btn danger" id="del">삭제</button><button class="btn ghost" id="ed">수정</button>`:""}<button class="btn" id="cl">닫기</button></div>`);
@@ -274,6 +284,19 @@ function viewPost(p){
       close();toast("삭제했습니다");loadAll()}catch(e){toast("삭제하지 못했습니다: "+errMsg(e))}};
   });
 }
+/* 정회원 전용 글: 비밀번호 확인 (서버에서 맞을 때만 내용을 돌려줌) */
+function unlockModal(p){
+  const m=modal(`<h2>🔒 ${esc(p.title)}</h2><div class="notice">정회원 전용 글입니다. 비밀번호를 입력해야 내용과 사진을 볼 수 있습니다.</div>
+    <form class="form" id="ulf" style="margin-top:16px"><label for="ul-pw">비밀번호<input id="ul-pw" type="password" autocomplete="off" required></label>
+    <div class="err" id="ulerr"></div><div class="actions"><button type="button" class="btn ghost" id="ulc">취소</button><button class="btn" id="ulgo">열기</button></div></form>`);
+  m.querySelector("#ulc").onclick=close;
+  m.querySelector("#ulf").onsubmit=async e=>{e.preventDefault();const b=$("#ulgo");b.disabled=true;$("#ulerr").textContent="";
+    const {data,error}=await sb.rpc("unlock_post",{pid:p.id,pw:$("#ul-pw").value});
+    const row=Array.isArray(data)?data[0]:data;
+    if(error||!row){b.disabled=false;$("#ulerr").textContent=error?errMsg(error):"비밀번호가 맞지 않습니다.";$("#ul-pw").select();return}
+    S.unlocked[p.id]={body:row.body||"",photos:Array.isArray(row.photos)?row.photos:[]};viewPost(p)};
+  setTimeout(()=>$("#ul-pw").focus(),30);
+}
 function field([k,label,type,opts,req],val){
   const id="f-"+k;val=val??"";
   if(type==="textarea")return `<label for="${id}">${label}<textarea id="${id}" name="${k}">${esc(val)}</textarea></label>`;
@@ -287,6 +310,8 @@ function editPost(b,p){
   const m=modal(`<h2>${cfg.name} ${p.id?"글 수정":"글쓰기"}</h2><form class="form" id="pf">
     ${cfg.fields.map(f=>field(f,v(f[0]))).join("")}
     <label for="f-authorName">작성자 표시 이름<input id="f-authorName" name="authorName" value="${esc(v("authorName"))}"></label>
+    ${S.canEdit?`<label class="chk"><input type="checkbox" id="f-lock"${p.locked?" checked":""}> <span><b>정회원 전용 글</b> — 비밀번호를 아는 사람만 내용과 사진을 볼 수 있습니다. 제목은 목록에 그대로 보입니다.</span></label>
+    <label for="f-lockpw" id="lockpw"${p.locked?"":' style="display:none"'}>비밀번호 ${p.locked?"(바꾸지 않으려면 비워 두세요)":"(회원들에게 따로 알려 주세요)"}<input id="f-lockpw" type="text" autocomplete="off" placeholder="${p.locked?"지금 비밀번호 그대로 사용":"예: raib2026"}"></label>`:""}
     ${cfg.photo?`<div><div style="font-size:13px;color:var(--muted);font-weight:500;margin-bottom:6px">사진 (여러 장 선택 가능, 최대 ${MAXPH}장 · 첫 사진이 대표 사진)</div><div style="font-size:12.5px;color:var(--muted);margin:-2px 0 8px">이미지를 복사한 뒤 이 창에서 <b>Ctrl+V</b>(맥은 ⌘+V)로 붙여넣거나, 사진 파일을 아래로 끌어다 놓아도 됩니다.</div><div class="pick" id="pick"></div><input id="f-photo" type="file" accept="image/*" multiple hidden></div>`:""}
     <div class="err" id="perr"></div>
     <div class="actions"><button type="button" class="btn ghost" id="cancel">취소</button><button class="btn" id="save">${p.id?"저장":"등록"}</button></div></form>`);
@@ -309,6 +334,8 @@ function editPost(b,p){
     box.addEventListener("dragover",e=>{e.preventDefault();box.classList.add("drop")});
     box.addEventListener("dragleave",()=>box.classList.remove("drop"));
     box.addEventListener("drop",e=>{e.preventDefault();box.classList.remove("drop");addFiles([...(e.dataTransfer?e.dataTransfer.files:[])])})}
+  const lk=m.querySelector("#f-lock");lk&&(lk.onchange=()=>{m.querySelector("#lockpw").style.display=lk.checked?"":"none";if(lk.checked)m.querySelector("#f-lockpw").focus()});
+  let createdId=null;
   m.querySelector("#cancel").onclick=()=>p.id?viewPost(p):close();
   m.querySelector("#pf").onsubmit=async e=>{
     e.preventDefault();const btn=$("#save");btn.disabled=true;$("#perr").textContent="";
@@ -316,14 +343,29 @@ function editPost(b,p){
     cfg.fields.forEach(([k])=>data[k]=(fd.get(k)||"").toString().trim());
     data.authorName=(fd.get("authorName")||"").toString().trim();
     if(!data.title){$("#perr").textContent="제목을 입력해 주세요.";btn.disabled=false;return}
+    const lockOn=!!(lk&&lk.checked),lockPw=lk?m.querySelector("#f-lockpw").value.trim():"";
+    if(lockOn&&!p.locked&&!lockPw){$("#perr").textContent="정회원 전용 글의 비밀번호를 정해 주세요.";btn.disabled=false;return}
     try{
       const news=items.filter(x=>x.file);let n=0;
       for(const it of items){if(!it.file)continue;n++;btn.textContent=`사진 올리는 중 ${n}/${news.length}`;
         const up=await uploadPhoto(it.file);URL.revokeObjectURL(it.url);it.url=up.url;it.path=up.path;delete it.file}
       data.photos=items.map(x=>({url:x.url,path:x.path||""}));
       const row=fromPost(data);
-      if(p.id){row.updated_at=new Date().toISOString();must(await sb.from("posts").update(row).eq("id",p.id));toast("저장했습니다")}
-      else{row.board=b;row.author_id=S.myId;must(await sb.from("posts").insert(row));toast("등록했습니다")}
+      if(lockOn){
+        /* 내용·사진은 잠금 표(post_locks)에만 두고, 공개 표에는 제목만 남깁니다 */
+        const body=row.body,photos=row.photos;row.body=null;row.photos=[];row.locked=true;
+        let id=p.id||createdId,fresh=false;
+        if(!id){row.board=b;row.author_id=S.myId;const r=await save(x=>sb.from("posts").insert(x).select("id").single(),row,["locked"],NEED_SQL);id=createdId=r.data.id;fresh=true}
+        const r2=await sb.rpc("set_post_lock",{pid:id,pw:lockPw||null,b:body,ph:photos});
+        if(r2.error)throw /set_post_lock|function/i.test(r2.error.message||"")?{message:NEED_SQL}:r2.error;
+        if(!fresh){row.updated_at=new Date().toISOString();delete row.board;delete row.author_id;must(await sb.from("posts").update(row).eq("id",id))}
+        toast(p.id?"저장했습니다":"등록했습니다");
+      }else{
+        if(p.locked)row.locked=false;
+        if(p.id){row.updated_at=new Date().toISOString();must(await sb.from("posts").update(row).eq("id",p.id));
+          if(p.locked)must(await sb.from("post_locks").delete().eq("post_id",p.id));toast("저장했습니다")}
+        else{row.board=b;row.author_id=S.myId;must(await sb.from("posts").insert(row));toast("등록했습니다")}
+      }
       close();loadAll();
     }catch(err){btn.disabled=false;btn.textContent=p.id?"저장":"등록";$("#perr").textContent="저장하지 못했습니다. "+errMsg(err)}
   };
@@ -437,6 +479,117 @@ function editMember(m,self){
     }catch(err){btn.disabled=false;$("#merr").textContent="저장하지 못했습니다. "+errMsg(err)}};
 }
 
+/* ---------- 팝업 공지 ---------- */
+const POPW=420;
+const addDays=(n)=>{const d=new Date();d.setDate(d.getDate()+n);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+function popState(pp){const t=today();
+  if(!pp.active)return["꺼짐","off"];
+  if(pp.start_date&&t<pp.start_date)return["예정","soon"];
+  if(pp.end_date&&t>pp.end_date)return["기간 끝남","off"];
+  return["게시 중","on"]}
+function hiddenToday(id){try{return localStorage.getItem("raib-pop-"+id)===today()}catch(_){return false}}
+function hideToday(id){try{localStorage.setItem("raib-pop-"+id,today())}catch(_){}}
+function popHTML(pp,preview){
+  const link=pp.link&&/^https?:\/\//i.test(pp.link)?pp.link:"";
+  const img=pp.image_url?(link&&!preview?`<a href="${esc(link)}" target="_blank" rel="noopener"><img src="${esc(pp.image_url)}" alt="${esc(pp.title)}"></a>`:`<img src="${esc(pp.image_url)}" alt="${esc(pp.title)}">`):"";
+  return `<div class="pop-h"><span>${esc(pp.title||"공지")}</span>${preview?'<em>미리보기 · 끌어서 위치 조정</em>':""}</div>
+  <div class="pop-b">${img}${pp.body?`<div class="tx">${esc(pp.body)}</div>`:""}${link?`<a class="more" href="${esc(link)}" target="_blank" rel="noopener"${preview?' tabindex="-1"':""}>자세히 보기 ↗</a>`:""}</div>
+  <div class="pop-f"><button type="button" data-today${preview?" disabled":""}><span class="box" aria-hidden="true"></span>오늘 하루 보지 않기</button><button type="button" data-x${preview?" disabled":""}>닫기 <span aria-hidden="true">✕</span></button></div>${preview?'<div class="grip" title="끌어서 크기 조절"></div>':""}`}
+/* 화면 크기에 맞춰 놓기 — 휴대폰(가로 700px 미만)에서는 위치 설정 대신 가운데에 맞춤 */
+function placePop(el,pp,i,preview){
+  const vw=innerWidth,vh=innerHeight,mob=vw<700&&!preview;
+  const w=Math.min(pp.width||POPW,vw-(mob?24:16));let x,y;
+  if(mob){x=Math.round((vw-w)/2)+i*8;y=118+i*14}
+  else{x=Math.min(Math.max(8,pp.pos_x??40),Math.max(8,vw-w-8));y=Math.min(Math.max(8,pp.pos_y??120),Math.max(8,vh-160))}
+  el.style.left=x+"px";el.style.top=y+"px";el.style.width=w+"px";
+  el.style.maxHeight=(vh-y-12)+"px";el.style.height=pp.height?Math.min(pp.height,vh-y-12)+"px":"";
+}
+function dragBy(handle,onDrag){handle.addEventListener("pointerdown",e=>{if(e.button>0||e.target.closest("button,a"))return;e.preventDefault();
+  const sx=e.clientX,sy=e.clientY;const st=onDrag(0,0,true);try{handle.setPointerCapture(e.pointerId)}catch(_){}
+  const mv=ev=>onDrag(ev.clientX-sx,ev.clientY-sy,false,st);
+  const up=()=>{handle.removeEventListener("pointermove",mv);handle.removeEventListener("pointerup",up);handle.removeEventListener("pointercancel",up)};
+  handle.addEventListener("pointermove",mv);handle.addEventListener("pointerup",up);handle.addEventListener("pointercancel",up)})}
+function makeMovable(el,onMove){dragBy(el.querySelector(".pop-h"),(dx,dy,start,st)=>{
+  if(start)return{x:parseFloat(el.style.left)||0,y:parseFloat(el.style.top)||0};
+  const x=Math.round(Math.max(0,Math.min(innerWidth-60,st.x+dx))),y=Math.round(Math.max(0,Math.min(innerHeight-44,st.y+dy)));
+  el.style.left=x+"px";el.style.top=y+"px";onMove&&onMove(x,y)})}
+function showPopups(){
+  document.querySelectorAll(".pop:not(.preview)").forEach(x=>x.remove());
+  const list=S.popups.filter(pp=>popState(pp)[1]==="on"&&!hiddenToday(pp.id)).sort((a,b)=>String(a.created_at).localeCompare(String(b.created_at)));
+  list.forEach((pp,i)=>{const el=document.createElement("div");el.className="pop";el.setAttribute("role","dialog");el.setAttribute("aria-label",pp.title||"공지");
+    el._pp=pp;el._i=i;el.innerHTML=popHTML(pp,false);document.body.appendChild(el);placePop(el,pp,i,false);
+    el.addEventListener("pointerdown",()=>{document.querySelectorAll(".pop:not(.preview)").forEach(x=>x.style.zIndex="");el.style.zIndex=16});
+    el.querySelector("[data-x]").onclick=()=>el.remove();
+    el.querySelector("[data-today]").onclick=()=>{hideToday(pp.id);el.remove()};
+    makeMovable(el)});
+}
+function popupManager(){
+  if(!S.popupsOk){const m=modal(`<h2>팝업 관리</h2><div class="notice">팝업 기능을 쓰려면 Supabase → SQL Editor에서 <b>update-popup-lock.sql</b>을 한 번 실행해야 합니다.</div><div class="actions"><button class="btn" id="pm-x">닫기</button></div>`);m.querySelector("#pm-x").onclick=close;return}
+  const rows=S.popups.slice().sort((a,b)=>String(b.start_date||"").localeCompare(String(a.start_date||""))||String(b.created_at).localeCompare(String(a.created_at)));
+  const m=modal(`<h2>팝업 관리</h2><p class="lead-s">홈페이지에 들어오면 뜨는 공지 창입니다. 시작일부터 종료일까지만 보이고, 기간이 지나면 저절로 사라집니다.</p>
+    ${rows.length?`<div class="tablewrap"><table><thead><tr><th>상태</th><th>제목</th><th>게시 기간</th><th>크기 · 위치</th><th></th></tr></thead><tbody>${rows.map(pp=>{const [st,c]=popState(pp);
+      return `<tr><td><span class="kind pst-${c}">${st}</span></td><td style="font-weight:600">${esc(pp.title)}</td><td class="num" style="white-space:nowrap">${pp.start_date?fmt(pp.start_date):"—"} ~ ${pp.end_date?fmt(pp.end_date):"계속"}</td><td class="num" style="white-space:nowrap">${pp.width}×${pp.height||"자동"} · 왼쪽 ${pp.pos_x}, 위 ${pp.pos_y}</td><td class="num"><button class="btn sm ghost" data-pe="${pp.id}">수정</button></td></tr>`}).join("")}</tbody></table></div>`
+      :`<div class="panel"><div class="empty">아직 만든 팝업이 없습니다. ‘새 팝업 만들기’를 눌러 주세요.</div></div>`}
+    <div class="actions"><button class="btn ghost" id="pm-x">닫기</button><button class="btn" id="pm-new">새 팝업 만들기</button></div>`);
+  m.querySelector("#pm-x").onclick=close;
+  m.querySelector("#pm-new").onclick=()=>editPopup({});
+  m.querySelectorAll("[data-pe]").forEach(b=>b.onclick=()=>editPopup(S.popups.find(x=>x.id===b.dataset.pe)));
+}
+function editPopup(pp){
+  pp=pp||{};const isNew=!pp.id;
+  const d=Object.assign({title:"",body:"",link:"",start_date:today(),end_date:addDays(14),active:true,pos_x:40,pos_y:120,width:POPW,height:null},pp);
+  let img=d.image_url?{url:d.image_url,path:d.image_path||""}:null;
+  const m=modal(`<h2>${isNew?"새 팝업 만들기":"팝업 수정"}</h2><form class="form" id="ppf">
+    <label for="pp-title">제목<input id="pp-title" name="title" required value="${esc(d.title)}" placeholder="예: 2026 송년 모임 안내"></label>
+    <label for="pp-body">내용 (선택)<textarea id="pp-body" name="body" style="min-height:120px">${esc(d.body||"")}</textarea></label>
+    <div><div class="lbl">이미지 (선택 · 한 장)</div><div class="pick" id="pp-pick"></div><input id="pp-file" type="file" accept="image/*" hidden></div>
+    <label for="pp-link">눌렀을 때 열 주소 (선택)<input id="pp-link" name="link" type="url" placeholder="https://" value="${esc(d.link||"")}"></label>
+    <div class="row2"><label for="pp-start">시작일<input id="pp-start" name="start_date" type="date" value="${esc(d.start_date||"")}"></label><label for="pp-end">종료일 (비우면 계속)<input id="pp-end" name="end_date" type="date" value="${esc(d.end_date||"")}"></label></div>
+    <fieldset class="geo"><legend>위치와 크기 (단위: 픽셀)</legend>
+      <div class="notice">화면에 점선 미리보기 창이 함께 뜹니다. <b>제목줄을 끌면 위치</b>, <b>오른쪽 아래 모서리를 끌면 크기</b>가 아래 숫자에 자동으로 들어갑니다. 휴대폰에서는 화면 가운데에 맞춰 보입니다.</div>
+      <div class="row4"><label for="pp-x">왼쪽에서<input id="pp-x" name="pos_x" type="number" min="0" value="${esc(d.pos_x)}"></label><label for="pp-y">위에서<input id="pp-y" name="pos_y" type="number" min="0" value="${esc(d.pos_y)}"></label>
+      <label for="pp-w">너비<input id="pp-w" name="width" type="number" min="200" max="1400" value="${esc(d.width)}"></label><label for="pp-h">높이 (비우면 자동)<input id="pp-h" name="height" type="number" min="120" max="1200" value="${esc(d.height??"")}"></label></div>
+    </fieldset>
+    <label class="chk"><input type="checkbox" id="pp-on"${d.active?" checked":""}> <span>팝업 사용 — 끄면 기간 안이어도 뜨지 않습니다</span></label>
+    <div class="err" id="pperr"></div>
+    <div class="actions">${isNew?"":`<button type="button" class="btn danger" id="pp-del" style="margin-right:auto">삭제</button>`}<button type="button" class="btn ghost" id="pp-back">목록으로</button><button class="btn" id="pp-save">${isNew?"만들기":"저장"}</button></div></form>`);
+  const f=m.querySelector("#ppf"),g=k=>(f.elements[k].value||"").trim(),setv=(k,v)=>{f.elements[k].value=v};
+  const fileIn=m.querySelector("#pp-file");
+  function drawPick(){const box=m.querySelector("#pp-pick");
+    box.innerHTML=img?`<div class="it" style="background-image:url('${esc(img.url)}')"><button type="button" class="x" aria-label="이미지 빼기">×</button></div>`:`<button type="button" class="add" id="pp-add">+ 이미지<br>추가</button>`;
+    const x=box.querySelector(".x");x&&(x.onclick=()=>{if(img&&img.file)URL.revokeObjectURL(img.url);img=null;drawPick();drawPv()});
+    const a=box.querySelector("#pp-add");a&&(a.onclick=()=>fileIn.click())}
+  fileIn.onchange=()=>{const fl=fileIn.files[0];fileIn.value="";if(!fl||!/^image\//.test(fl.type))return;if(img&&img.file)URL.revokeObjectURL(img.url);img={file:fl,url:URL.createObjectURL(fl)};drawPick();drawPv()};
+  drawPick();
+  /* 미리보기 창 */
+  const pv=document.createElement("div");pv.className="pop preview";pv.setAttribute("aria-hidden","true");document.body.appendChild(pv);
+  const cur=()=>({title:g("title"),body:g("body"),link:g("link"),image_url:img?img.url:"",pos_x:num(g("pos_x"))??40,pos_y:num(g("pos_y"))??120,width:num(g("width"))||POPW,height:num(g("height"))});
+  function drawPv(){if(!document.body.contains(pv))return;pv.innerHTML=popHTML(cur(),true);placePop(pv,cur(),0,true);
+    makeMovable(pv,(x,y)=>{setv("pos_x",x);setv("pos_y",y)});
+    dragBy(pv.querySelector(".grip"),(dx,dy,start,st)=>{
+      if(start)return{w:pv.offsetWidth,h:pv.offsetHeight};
+      const w=Math.round(Math.max(220,Math.min(1400,st.w+dx))),h=Math.round(Math.max(140,Math.min(1200,st.h+dy)));
+      pv.style.width=w+"px";pv.style.height=h+"px";pv.style.maxHeight="none";setv("width",w);setv("height",h)})}
+  f.addEventListener("input",drawPv);drawPv();
+  m.querySelector("#pp-back").onclick=popupManager;
+  const del=m.querySelector("#pp-del");del&&(del.onclick=async()=>{if(!del.dataset.sure){del.dataset.sure=1;del.textContent="한 번 더 누르면 삭제";return}
+    try{must(await sb.from("popups").delete().eq("id",pp.id));if(pp.image_path)sb.storage.from(BUCKET).remove([pp.image_path]).catch(()=>{});
+      toast("팝업을 삭제했습니다");await loadAll();showPopups();popupManager()}catch(err){$("#pperr").textContent=errMsg(err)}});
+  f.onsubmit=async e=>{e.preventDefault();const btn=$("#pp-save");$("#pperr").textContent="";
+    const st=g("start_date"),en=g("end_date");
+    if(st&&en&&en<st){$("#pperr").textContent="종료일이 시작일보다 앞에 있습니다.";return}
+    btn.disabled=true;
+    try{
+      if(img&&img.file){btn.textContent="이미지 올리는 중…";const up=await uploadPhoto(img.file);URL.revokeObjectURL(img.url);img={url:up.url,path:up.path}}
+      const row={title:g("title"),body:nz(g("body")),link:nz(g("link")),start_date:nz(st),end_date:nz(en),active:m.querySelector("#pp-on").checked,
+        pos_x:num(g("pos_x"))??40,pos_y:num(g("pos_y"))??120,width:num(g("width"))||POPW,height:num(g("height")),
+        image_url:img?img.url:null,image_path:img?(img.path||null):null,updated_at:new Date().toISOString()};
+      if(isNew)must(await sb.from("popups").insert(row));else must(await sb.from("popups").update(row).eq("id",pp.id));
+      if(pp.image_path&&pp.image_path!==row.image_path)sb.storage.from(BUCKET).remove([pp.image_path]).catch(()=>{});
+      toast(isNew?"팝업을 만들었습니다":"저장했습니다");await loadAll();showPopups();popupManager();
+    }catch(err){btn.disabled=false;btn.textContent=isNew?"만들기":"저장";$("#pperr").textContent="저장하지 못했습니다. "+errMsg(err)}};
+}
+
 /* ---------- 비밀번호 재설정 ---------- */
 function newPasswordModal(){
   const m=modal(`<h2>새 비밀번호 정하기</h2><form class="form" id="npf"><label for="np">새 비밀번호 (8자 이상)<input id="np" type="password" minlength="8" autocomplete="new-password" required></label><div class="err" id="nperr"></div><div class="actions"><button class="btn">저장</button></div></form>`);
@@ -445,6 +598,7 @@ function newPasswordModal(){
 }
 
 /* ---------- 시작 ---------- */
+let rzT;addEventListener("resize",()=>{clearTimeout(rzT);rzT=setTimeout(()=>document.querySelectorAll(".pop:not(.preview)").forEach(el=>el._pp&&placePop(el,el._pp,el._i,false)),150)});
 go((location.hash||"").slice(1).split("&")[0]||"home");
 if(!sb){S.loaded=true;render();return}
 sb.auth.onAuthStateChange((ev,session)=>{
