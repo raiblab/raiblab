@@ -15,6 +15,7 @@ create table if not exists public.members (
   id uuid primary key default gen_random_uuid(),
   user_id uuid unique references auth.users(id) on delete set null,
   name text not null,
+  phone text,
   gen int,
   course text,
   year int,
@@ -29,7 +30,7 @@ language sql stable security definer set search_path = public as $$
   select exists(select 1 from public.members where user_id = auth.uid());
 $$;
 
--- 3) 게시글 (연구실 동정·학술대회·연구실적·골프) ---------------------------
+-- 3) 게시글 (연구실 동정·학술대회·연구실적·친목도모(golf)) ---------------------------
 create table if not exists public.posts (
   id uuid primary key default gen_random_uuid(),
   board text not null check (board in ('news','conference','research','golf')),
@@ -53,6 +54,7 @@ create table if not exists public.posts (
 -- 4) 역대 임원 -----------------------------------------------------------
 create table if not exists public.officers (
   id uuid primary key default gen_random_uuid(),
+  section text not null default '임원',
   term text not null,
   period text,
   role text not null,
@@ -77,7 +79,12 @@ alter table public.pages    enable row level security;
 
 -- 관리자 표: 본인 행만 확인 가능
 drop policy if exists admins_self on public.admins;
-create policy admins_self on public.admins for select to authenticated using (user_id = auth.uid());
+drop policy if exists admins_read on public.admins;
+create policy admins_read on public.admins for select to authenticated using (user_id = auth.uid() or public.is_admin());
+drop policy if exists admins_insert on public.admins;
+create policy admins_insert on public.admins for insert to authenticated with check (public.is_admin());
+drop policy if exists admins_delete on public.admins;
+create policy admins_delete on public.admins for delete to authenticated using (public.is_admin() and user_id <> auth.uid());
 
 -- 게시글: 누구나 읽기 / 명단에 등록된 회원이 쓰기 / 본인 글 또는 관리자만 수정·삭제
 drop policy if exists posts_read on public.posts;

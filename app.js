@@ -21,13 +21,13 @@ const BOARDS={
     fields:[["title","학술대회명","text",null,true],["date","일자","date"],["place","장소","text"],["body","내용","textarea"]]},
   news:{name:"연구실 동정",desc:"연구실 구성원의 소식, 수상, 학위, 행사를 알립니다.",layout:"cards",photo:true,
     fields:[["title","제목","text",null,true],["date","일자","date"],["body","내용","textarea"]]},
-  golf:{name:"골프 동호회",desc:"레이브랩 골프 동호회 라운딩 일정과 후기입니다.",layout:"cards",photo:true,
-    fields:[["title","제목","text",null,true],["date","라운딩 일자","date"],["place","골프장","text"],["body","내용","textarea"]]}
+  golf:{name:"친목도모",desc:"레이브랩 회원 친목 모임과 골프 라운딩 일정·후기입니다.",layout:"cards",photo:true,
+    fields:[["title","제목","text",null,true],["date","일자","date"],["place","장소","text"],["body","내용","textarea"]]}
 };
-const TABS=[["home","홈"],["greeting","교수님 인사말"],["chair","회장 인사말"],["officers","임원·회원"],["research","연구실적"],["conference","학술대회"],["news","연구실 동정"],["golf","골프 동호회"]];
+const TABS=[["home","홈"],["greeting","교수님 인사말"],["chair","회장 인사말"],["officers","임원·회원"],["research","연구실적"],["conference","학술대회"],["news","연구실 동정"],["golf","친목도모"]];
 
 /* ---------- 상태 ---------- */
-const S={posts:[],pages:{},officers:[],members:[],loaded:false,session:null,myId:null,myEmail:"",canEdit:false,q:{}};
+const S={posts:[],pages:{},officers:[],members:[],admins:[],loaded:false,session:null,myId:null,myEmail:"",canEdit:false,q:{}};
 let current="home";
 const myMember=()=>S.myId?S.members.find(m=>m.userId===S.myId):null;
 const canWrite=()=>!!myMember()||S.canEdit;
@@ -35,8 +35,8 @@ const canWrite=()=>!!myMember()||S.canEdit;
 /* ---------- DB ↔ 화면 변환 ---------- */
 const toPost=r=>({id:r.id,board:r.board,title:r.title||"",body:r.body||"",date:r.date||"",place:r.place||"",kind:r.kind||"",year:r.year||"",authors:r.authors||"",venue:r.venue||"",source:r.source||"",link:r.link||"",authorName:r.author_name||"",authorId:r.author_id||"",photos:Array.isArray(r.photos)?r.photos:[],createdAt:r.created_at});
 const fromPost=d=>({title:d.title,body:nz(d.body),date:nz(d.date),place:nz(d.place),kind:nz(d.kind),year:num(d.year),authors:nz(d.authors),venue:nz(d.venue),source:nz(d.source),link:nz(d.link),author_name:nz(d.authorName),photos:d.photos||[]});
-const toOfficer=r=>({id:r.id,term:r.term||"",period:r.period||"",role:r.role||"",name:r.name||"",note:r.note||"",termOrder:r.term_order});
-const toMember=r=>({id:r.id,userId:r.user_id||"",name:r.name||"",gen:r.gen||"",course:r.course||"",year:r.year||"",email:r.email||"",org:r.org||"",field:r.field||"",joinedAt:r.joined_at});
+const toOfficer=r=>({id:r.id,section:r.section||"임원",term:r.term||"",period:r.period||"",role:r.role||"",name:r.name||"",note:r.note||"",termOrder:r.term_order});
+const toMember=r=>({id:r.id,userId:r.user_id||"",name:r.name||"",phone:r.phone||"",gen:r.gen||"",course:r.course||"",year:r.year||"",email:r.email||"",org:r.org||"",field:r.field||"",joinedAt:r.joined_at});
 
 async function loadAll(){
   if(!sb){S.loaded=true;render();return}
@@ -50,6 +50,8 @@ async function loadAll(){
   S.pages={};(pg.data||[]).forEach(r=>S.pages[r.key]=r);
   S.officers=(o.data||[]).map(toOfficer);
   S.members=(m.data||[]).map(toMember);
+  S.admins=[];
+  if(S.canEdit){const a=await sb.from("admins").select("user_id");S.admins=(a.data||[]).map(r=>r.user_id)}
   S.loaded=true;render();
 }
 async function loadAuth(session){
@@ -57,6 +59,10 @@ async function loadAuth(session){
   if(sb&&S.myId){const {data}=await sb.from("admins").select("user_id").eq("user_id",S.myId).maybeSingle();S.canEdit=!!data}
 }
 function must(res){if(res&&res.error)throw res.error;return res}
+/* 새로 추가한 열(phone, section)이 DB에 아직 없으면 그 열만 빼고 다시 저장 */
+async function save(run,row,cols){let r=await run(row);
+  if(r.error&&cols.some(c=>String(r.error.message||"").includes(c))){const d=Object.assign({},row);cols.forEach(c=>delete d[c]);r=await run(d)}
+  return must(r)}
 
 /* ---------- 탭 ---------- */
 $("#tabs").innerHTML=TABS.map(([k,l])=>`<a href="#${k}" data-k="${k}">${l}</a>`).join("");
@@ -109,17 +115,19 @@ function renderLetter(key,title,role,defName,aff){
   <div class="body">${p.heading?`<h3>${esc(p.heading)}</h3>`:""}${body}${p.body&&p.name?`<div class="sign">${esc(p.aff||aff)} ${esc(p.role||role)} ${esc(p.name)}</div>`:""}</div></article>`;
   const b=$("#edit-"+key);b&&(b.onclick=()=>editLetter(key,title,role,defName,aff));
 }
-const ROLES=["회장","총무"];
+const ROLES=["회장","부회장","총무","감사","이사"];
+const SECTIONS=[["임원","off-box","역대 임원","기수별 회장단과 임원 명단입니다."],["골프 임원","golf-off-box","골프 임원","골프 동호회 임원 명단입니다."]];
 function roleRank(r){const i=ROLES.indexOf(String(r||"").trim());return i<0?9:i}
-function renderOfficers(){
-  const el=$("#off-box");const terms={};
-  S.officers.forEach(o=>{(terms[o.term]=terms[o.term]||[]).push(o)});
+function renderOfficers(){SECTIONS.forEach(([sec,box,title,desc])=>renderOfficerSection(sec,box,title,desc))}
+function renderOfficerSection(sec,box,title,desc){
+  const el=$("#"+box);const terms={};
+  S.officers.filter(o=>o.section===sec).forEach(o=>{(terms[o.term]=terms[o.term]||[]).push(o)});
   const keys=Object.keys(terms).sort((a,b)=>(terms[b][0].termOrder||0)-(terms[a][0].termOrder||0)||b.localeCompare(a,"ko"));
   const body=keys.length?keys.map(t=>{const rows=terms[t].sort((a,b)=>roleRank(a.role)-roleRank(b.role)||String(a.name).localeCompare(String(b.name),"ko"));
     return `<div class="officer-term"><h3>${esc(t)}${rows[0].period?`<small>${esc(rows[0].period)}</small>`:""}</h3><div class="tablewrap off-t"><table><thead><tr><th>직책</th><th>성명</th><th>소속</th>${S.canEdit?"<th></th>":""}</tr></thead><tbody>${rows.map(r=>`<tr><td style="white-space:nowrap;font-weight:600">${esc(r.role)}</td><td style="white-space:nowrap">${esc(r.name)}</td><td>${esc(r.note)}</td>${S.canEdit?`<td class="num"><button class="btn sm ghost" data-off-edit="${r.id}">수정</button></td>`:""}</tr>`).join("")}</tbody></table></div></div>`}).join("")
-    :`<div class="panel"><div class="empty">${S.loaded?"아직 등록된 임원 명단이 없습니다."+(S.canEdit?" ‘임원 추가’로 기수별 명단을 입력해 주세요.":""):"불러오는 중…"}</div></div>`;
-  el.innerHTML=`<div class="sec-h"><div><h2>역대 임원</h2><p>기수별 회장단과 임원 명단입니다.</p></div>${S.canEdit?`<button class="btn" id="off-add">임원 추가</button>`:""}</div>${body}`;
-  const a=$("#off-add");a&&(a.onclick=()=>editOfficer());
+    :`<div class="panel"><div class="empty">${S.loaded?"아직 등록된 "+title+" 명단이 없습니다."+(S.canEdit?" ‘"+title+" 추가’로 명단을 입력해 주세요.":""):"불러오는 중…"}</div></div>`;
+  el.innerHTML=`<div class="sec-h"><div><h2>${title}</h2><p>${desc}</p></div>${S.canEdit?`<button class="btn" data-off-add="1">${title} 추가</button>`:""}</div>${body}`;
+  const a=el.querySelector("[data-off-add]");a&&(a.onclick=()=>editOfficer({section:sec}));
   el.querySelectorAll("[data-off-edit]").forEach(b=>b.onclick=()=>editOfficer(S.officers.find(o=>o.id===b.dataset.offEdit)));
 }
 function renderBoard(b){
@@ -188,11 +196,12 @@ function memberFields(m){return `
     <div class="row2"><label for="m-name">성명<input id="m-name" name="name" required value="${esc(m.name)}"></label>
     <label for="m-course">과정<select id="m-course" name="course">${COURSES.map(c=>`<option${c===m.course?" selected":""}>${c}</option>`).join("")}</select></label></div>
     <div class="row2"><label for="m-gen">기수 (숫자만, 예: 3)<input id="m-gen" name="gen" type="number" min="1" max="200" required value="${esc(m.gen)}"></label><label for="m-year">입학 연도 (선택)<input id="m-year" name="year" type="number" min="1990" max="2100" value="${esc(m.year)}"></label></div>
+    <label for="m-phone">전화번호 (회원끼리만 보입니다)<input id="m-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="예: 010-1234-5678" value="${esc(m.phone)}"></label>
     <label for="m-email">명단에 표시할 이메일 (선택)<input id="m-email" name="email" type="email" value="${esc(m.email)}"></label>
     <label for="m-org">직장·직위 (선택)<input id="m-org" name="org" placeholder="예: ○○공사 차장" value="${esc(m.org)}"></label>
     <label for="m-field">연구분야<input id="m-field" name="field" placeholder="예: 전세시장, 머신러닝" value="${esc(m.field)}"></label>`}
-function readMember(fd){const d={};["name","gen","course","year","email","org","field"].forEach(k=>d[k]=(fd.get(k)||"").toString().trim());
-  return {name:d.name,gen:num(d.gen),course:d.course,year:num(d.year),email:nz(d.email),org:nz(d.org),field:nz(d.field)}}
+function readMember(fd){const d={};["name","gen","course","year","phone","email","org","field"].forEach(k=>d[k]=(fd.get(k)||"").toString().trim());
+  return {name:d.name,phone:nz(d.phone),gen:num(d.gen),course:d.course,year:num(d.year),email:nz(d.email),org:nz(d.org),field:nz(d.field)}}
 function signupModal(){
   if(!sb){toast("홈페이지 설정(Supabase 연결)이 아직 끝나지 않았습니다");return}
   if(S.session){editMember({},true);return}
@@ -213,7 +222,7 @@ function signupModal(){
       else{close();modal(`<h2>인증 메일을 보냈습니다</h2><div class="content">${esc(email)}로 보낸 메일의 링크를 누른 뒤 로그인하시면 회원 명단에 자동으로 올라갑니다.</div><div class="actions"><button class="btn" onclick="document.getElementById('modal-root').innerHTML=''">확인</button></div>`)}
     }catch(err){b.disabled=false;$("#suerr").textContent=errMsg(err)}};
 }
-async function insertSelf(prof){must(await sb.from("members").insert(Object.assign({user_id:S.myId},prof)))}
+async function insertSelf(prof){await save(r=>sb.from("members").insert(r),Object.assign({user_id:S.myId},prof),["phone"])}
 /* 이메일 인증 후 처음 로그인하면 가입 때 적은 정보로 명단에 자동 등록 */
 async function ensureMemberRow(session){
   const pend=session&&session.user&&session.user.user_metadata&&session.user.user_metadata.pending_member;
@@ -330,6 +339,7 @@ function editLetter(key,title,role,defName,aff){
 function editOfficer(o){
   o=o||{};
   const m=modal(`<h2>임원 ${o.id?"수정":"추가"}</h2><form class="form" id="of">
+    <label for="o-section">구분<select id="o-section" name="section">${SECTIONS.map(([x])=>`<option${x===(o.section||"임원")?" selected":""}>${x}</option>`).join("")}</select></label>
     <div class="row2"><label for="o-term">기수<input id="o-term" name="term" placeholder="예: 제1기" value="${esc(o.term||"")}" required></label><label for="o-period">임기<input id="o-period" name="period" placeholder="예: 2025.03 – 2027.02" value="${esc(o.period||"")}"></label></div>
     <div class="row2"><label for="o-role">직책<select id="o-role" name="role">${(ROLES.includes(o.role)||!o.role?ROLES:ROLES.concat([o.role])).map(r=>`<option${r===o.role?" selected":""}>${esc(r)}</option>`).join("")}</select></label><label for="o-name">성명<input id="o-name" name="name" value="${esc(o.name||"")}" required></label></div>
     <label for="o-note">소속<input id="o-note" name="note" value="${esc(o.note||"")}"></label>
@@ -339,8 +349,8 @@ function editOfficer(o){
   m.querySelector("#oc").onclick=close;
   const od=m.querySelector("#odel");od&&(od.onclick=async()=>{if(od.dataset.sure){try{must(await sb.from("officers").delete().eq("id",o.id));close();toast("삭제했습니다");loadAll()}catch(err){$("#oerr").textContent=errMsg(err)}}else{od.dataset.sure=1;od.textContent="한 번 더 누르면 삭제"}});
   m.querySelector("#of").onsubmit=async e=>{e.preventDefault();const fd=new FormData(e.target);const g=k=>(fd.get(k)||"").toString().trim();
-    const d={term:g("term"),period:nz(g("period")),role:g("role"),name:g("name"),note:nz(g("note")),term_order:num(g("termOrder"))};
-    try{if(o.id)must(await sb.from("officers").update(d).eq("id",o.id));else must(await sb.from("officers").insert(d));close();toast("저장했습니다");loadAll()}catch(err){$("#oerr").textContent="저장하지 못했습니다. "+errMsg(err)}};
+    const d={section:g("section")||"임원",term:g("term"),period:nz(g("period")),role:g("role"),name:g("name"),note:nz(g("note")),term_order:num(g("termOrder"))};
+    try{if(o.id)await save(r=>sb.from("officers").update(r).eq("id",o.id),d,["section"]);else await save(r=>sb.from("officers").insert(r),d,["section"]);close();toast("저장했습니다");loadAll()}catch(err){$("#oerr").textContent="저장하지 못했습니다. "+errMsg(err)}};
 }
 
 /* ---------- 회원 명단 ---------- */
@@ -351,13 +361,13 @@ function renderMembers(){
   const q=(S.q.members||"").trim().toLowerCase();
   const keep=document.activeElement&&document.activeElement.id==="q-members";
   const mineRow=myMember();
-  const list=S.members.filter(m=>!q||[m.name,m.course,m.year,m.org,m.field,m.gen?m.gen+"기":""].join(" ").toLowerCase().includes(q))
+  const list=S.members.filter(m=>!q||[m.name,m.course,m.year,m.org,m.field,m.phone,m.gen?m.gen+"기":""].join(" ").toLowerCase().includes(q))
     .sort((a,b)=>(Number(a.gen)||9999)-(Number(b.gen)||9999)||(COURSES.indexOf(a.course)+1||99)-(COURSES.indexOf(b.course)+1||99)||String(a.name).localeCompare(String(b.name),"ko"));
   let btns=mineRow?`<button class="btn ghost" id="m-mine">내 회원정보 수정</button>`:`<button class="btn" id="m-join">명단에 내 정보 등록</button>`;
   if(S.canEdit)btns+=`<button class="btn ghost" id="m-add">회원 추가</button>`;
   const inner=!S.loaded?`<div class="panel"><div class="empty">불러오는 중…</div></div>`
     :!list.length?`<div class="panel"><div class="empty">${q?"검색 결과가 없습니다.":"아직 등록된 회원이 없습니다."}</div></div>`
-    :`<div class="tablewrap"><table><thead><tr><th>번호</th><th>기수</th><th>성명</th><th>과정</th><th>입학</th><th>직장·직위</th><th>연구분야</th><th>이메일</th><th></th></tr></thead><tbody>${list.map((m,i)=>`<tr><td class="num">${i+1}</td><td class="num" style="color:var(--ink);font-weight:600">${m.gen?esc(m.gen)+"기":"—"}</td><td style="white-space:nowrap;font-weight:600">${esc(m.name)}${m.userId&&m.userId===S.myId?' <span class="kind">나</span>':""}</td><td><span class="kind ${courseClass(m.course)}">${esc(m.course)}</span></td><td class="num">${esc(m.year)}</td><td>${esc(m.org)}</td><td>${esc(m.field)}</td><td style="white-space:nowrap">${esc(m.email)}</td><td class="num">${(S.canEdit||(m.userId&&m.userId===S.myId))?`<button class="btn sm ghost" data-mem="${m.id}">수정</button>`:""}</td></tr>`).join("")}</tbody></table></div>`;
+    :`<div class="tablewrap"><table><thead><tr><th>번호</th><th>기수</th><th>성명</th><th>과정</th><th>입학</th><th>직장·직위</th><th>연구분야</th><th>전화번호</th><th>이메일</th><th></th></tr></thead><tbody>${list.map((m,i)=>`<tr><td class="num">${i+1}</td><td class="num" style="color:var(--ink);font-weight:600">${m.gen?esc(m.gen)+"기":"—"}</td><td style="white-space:nowrap;font-weight:600">${esc(m.name)}${m.userId&&m.userId===S.myId?' <span class="kind">나</span>':""}${S.canEdit&&m.userId&&S.admins.includes(m.userId)?' <span class="adm">관리자</span>':""}</td><td><span class="kind ${courseClass(m.course)}">${esc(m.course)}</span></td><td class="num">${esc(m.year)}</td><td>${esc(m.org)}</td><td>${esc(m.field)}</td><td style="white-space:nowrap">${m.phone?`<a href="tel:${esc(m.phone.replace(/[^0-9+]/g,""))}">${esc(m.phone)}</a>`:""}</td><td style="white-space:nowrap">${esc(m.email)}</td><td class="num">${(S.canEdit||(m.userId&&m.userId===S.myId))?`<button class="btn sm ghost" data-mem="${m.id}">수정</button>`:""}</td></tr>`).join("")}</tbody></table></div>`;
   el.innerHTML=`<div class="sec-h"><div><h2>회원</h2><p>레이브랩 회원 명단입니다. 회원가입을 하면 자동으로 명단에 추가됩니다.${S.loaded?` 현재 ${S.members.length}명`:""}</p></div><div class="toolbar"><input class="search" id="q-members" type="search" placeholder="이름·과정·직장 검색" value="${esc(S.q.members||"")}">${btns}</div></div>${inner}`;
   const qi=$("#q-members");qi.oninput=()=>{S.q.members=qi.value;renderMembers()};
   if(keep){qi.focus();qi.setSelectionRange(qi.value.length,qi.value.length)}
@@ -367,12 +377,13 @@ function renderMembers(){
   el.querySelectorAll("[data-mem]").forEach(b=>b.onclick=()=>{const m=S.members.find(x=>x.id===b.dataset.mem);editMember(m,m.userId===S.myId)});
 }
 function editMember(m,self){
-  m=Object.assign({name:"",gen:"",course:"",year:"",email:"",org:"",field:""},m||{});const isNew=!m.id;
+  m=Object.assign({name:"",gen:"",course:"",year:"",phone:"",email:"",org:"",field:""},m||{});const isNew=!m.id;
   const title=self?(isNew?"명단에 내 정보 등록":"내 회원정보 수정"):(isNew?"회원 추가":"회원 정보 수정");
   if(self&&isNew&&!m.email)m.email=S.myEmail||"";
   const md=modal(`<h2>${title}</h2><form class="form" id="mf">
     ${self?`<div class="notice">로그인 계정: ${esc(S.myEmail)}</div>`:""}
     ${memberFields(m)}
+    ${S.canEdit&&!self&&!isNew?(m.userId?`<label class="chk"><input type="checkbox" id="m-admin"${S.admins.includes(m.userId)?" checked":""}> 홈페이지 관리자로 지정 (인사말·임원 명단 편집, 회원 관리, 다른 사람 글 수정·삭제 가능)</label>`:`<div class="notice">이 회원은 관리자가 직접 추가한 명단이라 로그인 계정이 없습니다. 관리자로 지정하려면 본인이 회원가입을 해야 합니다.</div>`):""}
     <div class="err" id="merr"></div>
     <div class="actions">${!isNew?`<button type="button" class="btn danger" id="mdel" style="margin-right:auto">${self?"명단에서 빼기":"삭제"}</button>`:""}<button type="button" class="btn ghost" id="mc">취소</button><button class="btn" id="ms">${isNew?"등록":"저장"}</button></div></form>`);
   md.querySelector("#mc").onclick=close;
@@ -381,8 +392,11 @@ function editMember(m,self){
   md.querySelector("#mf").onsubmit=async e=>{e.preventDefault();const d=readMember(new FormData(e.target));const btn=$("#ms");btn.disabled=true;
     try{
       if(isNew&&self)await insertSelf(d);
-      else if(isNew)must(await sb.from("members").insert(d));
-      else{d.updated_at=new Date().toISOString();must(await sb.from("members").update(d).eq("id",m.id))}
+      else if(isNew)await save(r=>sb.from("members").insert(r),d,["phone"]);
+      else{d.updated_at=new Date().toISOString();await save(r=>sb.from("members").update(r).eq("id",m.id),d,["phone"])}
+      if(!self&&!isNew&&m.userId){const want=!!(e.target.querySelector("#m-admin")||{}).checked,has=S.admins.includes(m.userId);
+        if(want&&!has)must(await sb.from("admins").insert({user_id:m.userId}));
+        if(!want&&has)must(await sb.from("admins").delete().eq("user_id",m.userId))}
       close();toast("저장했습니다");loadAll();
     }catch(err){btn.disabled=false;$("#merr").textContent="저장하지 못했습니다. "+errMsg(err)}};
 }

@@ -200,3 +200,5 @@ img{max-width:100%}
 .hero .emblem{display:flex;align-items:center;justify-content:center;gap:14px;padding:20px}
 .hero .emblem img{width:auto;max-width:none;height:clamp(96px,12.5vw,150px);object-fit:contain}
 .hero .emblem .smu{padding-right:16px}
+.form label.chk{display:flex;flex-direction:row;align-items:flex-start;gap:8px;font-size:13.5px;color:var(--ink);background:var(--soft);padding:10px 12px;border-radius:4px;line-height:1.5}
+.form label.chk input{width:auto;margin-top:3px}
