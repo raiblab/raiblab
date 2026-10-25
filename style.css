@@ -202,3 +202,10 @@ img{max-width:100%}
 .hero .emblem .smu{padding-right:16px}
 .form label.chk{display:flex;flex-direction:row;align-items:flex-start;gap:8px;font-size:13.5px;color:var(--ink);background:var(--soft);padding:10px 12px;border-radius:4px;line-height:1.5}
 .form label.chk input{width:auto;margin-top:3px}
+.home-grid .panel.wide{grid-column:1/-1}
+.ftabs{display:flex;flex-wrap:wrap;gap:8px;margin:-6px 0 18px}
+.ftabs button{font:inherit;font-size:13.5px;border:1px solid var(--line);background:var(--bg,#fff);color:var(--ink);border-radius:999px;padding:6px 14px;cursor:pointer}
+.ftabs button small{color:var(--muted);margin-left:2px}
+.ftabs button[aria-pressed="true"]{background:#12305a;border-color:#12305a;color:#fff}
+.ftabs button[aria-pressed="true"] small{color:#d9b864}
+.card .cb .kind{justify-self:start}

@@ -33,7 +33,7 @@ $$;
 -- 3) 게시글 (연구실 동정·학술대회·연구실적·친목도모(golf)) ---------------------------
 create table if not exists public.posts (
   id uuid primary key default gen_random_uuid(),
-  board text not null check (board in ('news','conference','research','golf')),
+  board text not null check (board in ('news','conference','research','golf','edu')),
   title text not null,
   body text,
   date date,

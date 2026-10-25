@@ -18,3 +18,7 @@ create policy admins_insert on public.admins for insert to authenticated
 drop policy if exists admins_delete on public.admins;
 create policy admins_delete on public.admins for delete to authenticated
   using (public.is_admin() and user_id <> auth.uid());   -- 자기 자신은 해제 못 함(관리자가 0명 되는 것 방지)
+
+-- 4) 미래교육원 게시판 추가
+alter table public.posts drop constraint if exists posts_board_check;
+alter table public.posts add constraint posts_board_check check (board in ('news','conference','research','golf','edu'));

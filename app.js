@@ -21,13 +21,15 @@ const BOARDS={
     fields:[["title","학술대회명","text",null,true],["date","일자","date"],["place","장소","text"],["body","내용","textarea"]]},
   news:{name:"연구실 동정",desc:"연구실 구성원의 소식, 수상, 학위, 행사를 알립니다.",layout:"cards",photo:true,
     fields:[["title","제목","text",null,true],["date","일자","date"],["body","내용","textarea"]]},
+  edu:{name:"미래교육원",desc:"상명대학교 미래교육원 빌딩관리사 자격증반·타로반 과정 소개와 강의 모습입니다.",layout:"cards",photo:true,filter:"kind",
+    fields:[["kind","과정","select",["빌딩관리사 자격증반","타로반","기타"]],["title","제목","text",null,true],["date","일자","date"],["place","강의실·장소","text"],["body","소개·내용","textarea"]]},
   golf:{name:"친목도모",desc:"레이브랩 회원 친목 모임과 골프 라운딩 일정·후기입니다.",layout:"cards",photo:true,
     fields:[["title","제목","text",null,true],["date","일자","date"],["place","장소","text"],["body","내용","textarea"]]}
 };
-const TABS=[["home","홈"],["greeting","교수님 인사말"],["chair","회장 인사말"],["officers","임원·회원"],["research","연구실적"],["conference","학술대회"],["news","연구실 동정"],["golf","친목도모"]];
+const TABS=[["home","홈"],["greeting","교수님 인사말"],["chair","회장 인사말"],["officers","임원·회원"],["research","연구실적"],["conference","학술대회"],["news","연구실 동정"],["edu","미래교육원"],["golf","친목도모"]];
 
 /* ---------- 상태 ---------- */
-const S={posts:[],pages:{},officers:[],members:[],admins:[],loaded:false,session:null,myId:null,myEmail:"",canEdit:false,q:{}};
+const S={posts:[],pages:{},officers:[],members:[],admins:[],loaded:false,f:{},session:null,myId:null,myEmail:"",canEdit:false,q:{}};
 let current="home";
 const myMember=()=>S.myId?S.members.find(m=>m.userId===S.myId):null;
 const canWrite=()=>!!myMember()||S.canEdit;
@@ -101,10 +103,11 @@ function renderWho(){
 }
 function loadingOr(html){return S.loaded?html:`<div class="empty">불러오는 중…</div>`}
 function renderHome(){
-  $("#home-grid").innerHTML=["news","conference","research","golf"].map(b=>{
+  const HB=["news","conference","research","edu","golf"];
+  $("#home-grid").innerHTML=HB.map((b,i)=>{
     const list=postsOf(b).sort((a,c)=>sortKey(c).localeCompare(sortKey(a))).slice(0,5);
     const items=list.length?`<ul class="mini">${list.map(p=>`<li><a href="#${b}" data-open="${p.id}">${esc(p.title)}</a><time>${fmt(p.date||p.createdAt)}</time></li>`).join("")}</ul>`:`<div class="empty">아직 등록된 글이 없습니다.</div>`;
-    return `<div class="panel"><h3>${BOARDS[b].name}<a href="#${b}">전체 보기 →</a></h3>${loadingOr(items)}</div>`;
+    return `<div class="panel${HB.length%2&&i===HB.length-1?" wide":""}"><h3>${BOARDS[b].name}<a href="#${b}">전체 보기 →</a></h3>${loadingOr(items)}</div>`;
   }).join("");
 }
 function renderLetter(key,title,role,defName,aff){
@@ -133,19 +136,21 @@ function renderOfficerSection(sec,box,title,desc){
 function renderBoard(b){
   const cfg=BOARDS[b],el=$("#v-"+b);
   const q=(S.q[b]||"").trim().toLowerCase();
-  let list=postsOf(b).filter(p=>!q||[p.title,p.body,p.authors,p.venue,p.place,p.authorName].join(" ").toLowerCase().includes(q));
+  const fv=cfg.filter?(S.f[b]||""):"";
+  let list=postsOf(b).filter(p=>!fv||p[cfg.filter]===fv).filter(p=>!q||[p.title,p.body,p.authors,p.venue,p.place,p.authorName].join(" ").toLowerCase().includes(q));
   const keep=document.activeElement&&document.activeElement.id==="q-"+b;
   let inner;
   if(!S.loaded)inner=`<div class="panel"><div class="empty">불러오는 중…</div></div>`;
   else if(!list.length)inner=`<div class="panel"><div class="empty">${q?"검색 결과가 없습니다.":"아직 등록된 글이 없습니다."+(canWrite()?" ‘글쓰기’로 첫 글을 올려 주세요.":"")}</div></div>`;
   else if(cfg.layout==="cards"){
     list.sort((a,c)=>sortKey(c).localeCompare(sortKey(a)));
-    inner=`<div class="cards">${list.map(p=>{const ps=p.photos;return `<button class="card" data-open="${p.id}">${ps.length?`<div class="ph" style="background-image:url('${esc(ps[0].url)}')">${ps.length>1?`<span class="n">사진 ${ps.length}장</span>`:""}</div>`:`<div class="ph none">RAIB</div>`}<div class="cb"><div class="cm">${fmt(p.date||p.createdAt)}${p.place?" · "+esc(p.place):""}</div><div class="ct">${esc(p.title)}</div>${p.body?`<div class="cx">${esc(p.body)}</div>`:""}</div></button>`}).join("")}</div>`;
+    inner=`<div class="cards">${list.map(p=>{const ps=p.photos;return `<button class="card" data-open="${p.id}">${ps.length?`<div class="ph" style="background-image:url('${esc(ps[0].url)}')">${ps.length>1?`<span class="n">사진 ${ps.length}장</span>`:""}</div>`:`<div class="ph none">RAIB</div>`}<div class="cb">${p.kind?`<span class="kind">${esc(p.kind)}</span>`:""}<div class="cm">${fmt(p.date||p.createdAt)}${p.place?" · "+esc(p.place):""}</div><div class="ct">${esc(p.title)}</div>${p.body?`<div class="cx">${esc(p.body)}</div>`:""}</div></button>`}).join("")}</div>`;
   }else{
     const years={};list.forEach(p=>{const y=p.year||"연도 미기재";(years[y]=years[y]||[]).push(p)});
     inner=Object.keys(years).sort((a,c)=>String(c).localeCompare(String(a))).map(y=>`<div class="year-h">${esc(y)}</div><div class="tablewrap"><table><thead><tr><th>구분</th><th>제목</th><th>저자·참여</th><th>게재지·발주기관</th></tr></thead><tbody>${years[y].map(p=>`<tr class="row" data-open="${p.id}"><td><span class="kind">${esc(p.kind)}</span></td><td style="font-weight:600">${esc(p.title)}</td><td>${esc(p.authors)}</td><td>${esc(p.venue)}</td></tr>`).join("")}</tbody></table></div>`).join("");
   }
-  el.innerHTML=`<div class="sec-h"><div><h2>${cfg.name}</h2><p>${cfg.desc}</p></div><div class="toolbar"><input class="search" id="q-${b}" type="search" placeholder="검색" value="${esc(S.q[b]||"")}">${canWrite()?`<button class="btn" id="w-${b}">글쓰기</button>`:(S.session?"":`<button class="btn ghost" id="w-login">로그인하고 글쓰기</button>`)}</div></div>${inner}`;
+  el.innerHTML=`<div class="sec-h"><div><h2>${cfg.name}</h2><p>${cfg.desc}</p></div><div class="toolbar"><input class="search" id="q-${b}" type="search" placeholder="검색" value="${esc(S.q[b]||"")}">${canWrite()?`<button class="btn" id="w-${b}">글쓰기</button>`:(S.session?"":`<button class="btn ghost" id="w-login">로그인하고 글쓰기</button>`)}</div></div>${cfg.filter?`<div class="ftabs">${[""].concat(cfg.fields.find(f=>f[0]===cfg.filter)[3]).map(o=>`<button type="button" data-f="${esc(o)}"${o===fv?' aria-pressed="true"':""}>${o?esc(o):"전체"} <small>${o?postsOf(b).filter(p=>p[cfg.filter]===o).length:postsOf(b).length}</small></button>`).join("")}</div>`:""}${inner}`;
+  el.querySelectorAll("[data-f]").forEach(x=>x.onclick=()=>{S.f[b]=x.dataset.f;renderBoard(b)});
   const qi=$("#q-"+b);qi.oninput=()=>{S.q[b]=qi.value;renderBoard(b)};
   if(keep){qi.focus();qi.setSelectionRange(qi.value.length,qi.value.length)}
   const w=$("#w-"+b);w&&(w.onclick=()=>editPost(b));
