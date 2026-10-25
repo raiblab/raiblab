@@ -29,7 +29,7 @@ const BOARDS={
 const TABS=[["home","홈"],["greeting","교수님 인사말"],["chair","회장 인사말"],["officers","임원·회원"],["research","연구실적"],["conference","학술대회"],["news","연구실 동정"],["edu","미래교육원"],["golf","친목도모"]];
 
 /* ---------- 상태 ---------- */
-const S={posts:[],pages:{},officers:[],members:[],admins:[],loaded:false,f:{},session:null,myId:null,myEmail:"",canEdit:false,q:{}};
+const S={posts:[],pages:{},officers:[],members:[],admins:[],users:[],usersOk:false,loaded:false,f:{},session:null,myId:null,myEmail:"",canEdit:false,q:{}};
 let current="home";
 const myMember=()=>S.myId?S.members.find(m=>m.userId===S.myId):null;
 const canWrite=()=>!!myMember()||S.canEdit;
@@ -53,7 +53,10 @@ async function loadAll(){
   S.officers=(o.data||[]).map(toOfficer);
   S.members=(m.data||[]).map(toMember);
   S.admins=[];
-  if(S.canEdit){const a=await sb.from("admins").select("user_id");S.admins=(a.data||[]).map(r=>r.user_id)}
+  S.users=[];S.usersOk=false;
+  if(S.canEdit){const [a,u]=await Promise.all([sb.from("admins").select("user_id"),sb.rpc("admin_list_users")]);
+    S.admins=(a.data||[]).map(r=>r.user_id);
+    if(!u.error){S.users=u.data||[];S.usersOk=true}}
   S.loaded=true;render();
 }
 async function loadAuth(session){
@@ -362,23 +365,52 @@ function renderMembers(){
   const el=$("#v-members");
   if(!S.session){el.innerHTML=`<div class="sec-h"><div><h2>회원</h2><p>레이브랩 회원 명단입니다.</p></div><div class="toolbar"><button class="btn ghost" id="mm-login">로그인</button><button class="btn" id="mm-join">회원가입</button></div></div><div class="panel"><div class="empty">회원 명단은 로그인한 회원에게만 보입니다.</div></div>`;
     $("#mm-login").onclick=loginModal;$("#mm-join").onclick=signupModal;return}
-  const q=(S.q.members||"").trim().toLowerCase();
+  const adm=S.canEdit;
+  const q=(S.q.members||"").trim().toLowerCase();const fc=S.f.members||"";
   const keep=document.activeElement&&document.activeElement.id==="q-members";
   const mineRow=myMember();
-  const list=S.members.filter(m=>!q||[m.name,m.course,m.year,m.org,m.field,m.gen?m.gen+"기":""].join(" ").toLowerCase().includes(q))
+  const U={};S.users.forEach(u=>U[u.id]=u);
+  const list=S.members.filter(m=>!fc||m.course===fc).filter(m=>!q||[m.name,m.course,m.year,m.org,m.field,m.email,m.gen?m.gen+"기":"",adm&&U[m.userId]?U[m.userId].email:""].join(" ").toLowerCase().includes(q))
     .sort((a,b)=>(Number(a.gen)||9999)-(Number(b.gen)||9999)||(COURSES.indexOf(a.course)+1||99)-(COURSES.indexOf(b.course)+1||99)||String(a.name).localeCompare(String(b.name),"ko"));
   let btns=mineRow?`<button class="btn ghost" id="m-mine">내 회원정보 수정</button>`:`<button class="btn" id="m-join">명단에 내 정보 등록</button>`;
-  if(S.canEdit)btns+=`<button class="btn ghost" id="m-add">회원 추가</button>`;
+  if(adm)btns+=`<button class="btn ghost" id="m-add">회원 추가</button>`;
+  const chips=`<div class="ftabs">${[""].concat(COURSES).map(c=>`<button type="button" data-mf="${esc(c)}"${c===fc?' aria-pressed="true"':""}>${c||"전체"} <small>${c?S.members.filter(m=>m.course===c).length:S.members.length}</small></button>`).join("")}</div>`;
+  const ah=adm?"<th>로그인 계정</th><th>가입일</th><th>최근 접속</th>":"";
+  const ac=m=>{if(!adm)return"";const u=U[m.userId];
+    return u?`<td style="white-space:nowrap">${esc(u.email)}</td><td class="num">${fmt(u.created_at)}</td><td class="num">${u.last_sign_in_at?fmt(u.last_sign_in_at):"—"}</td>`
+      :`<td style="white-space:nowrap;color:var(--muted)">${m.userId?(S.usersOk?"—":"…"):"계정 없음"}</td><td class="num">${fmt(m.joinedAt)}</td><td class="num">—</td>`};
   const inner=!S.loaded?`<div class="panel"><div class="empty">불러오는 중…</div></div>`
-    :!list.length?`<div class="panel"><div class="empty">${q?"검색 결과가 없습니다.":"아직 등록된 회원이 없습니다."}</div></div>`
-    :`<div class="tablewrap"><table><thead><tr><th>번호</th><th>기수</th><th>성명</th><th>과정</th><th>입학</th><th>직장·직위</th><th>연구분야</th><th>이메일</th><th></th></tr></thead><tbody>${list.map((m,i)=>`<tr><td class="num">${i+1}</td><td class="num" style="color:var(--ink);font-weight:600">${m.gen?esc(m.gen)+"기":"—"}</td><td style="white-space:nowrap;font-weight:600">${esc(m.name)}${m.userId&&m.userId===S.myId?' <span class="kind">나</span>':""}${S.canEdit&&m.userId&&S.admins.includes(m.userId)?' <span class="adm">관리자</span>':""}</td><td><span class="kind ${courseClass(m.course)}">${esc(m.course)}</span></td><td class="num">${esc(m.year)}</td><td>${esc(m.org)}</td><td>${esc(m.field)}</td><td style="white-space:nowrap">${esc(m.email)}</td><td class="num">${(S.canEdit||(m.userId&&m.userId===S.myId))?`<button class="btn sm ghost" data-mem="${m.id}">수정</button>`:""}</td></tr>`).join("")}</tbody></table></div>`;
-  el.innerHTML=`<div class="sec-h"><div><h2>회원</h2><p>레이브랩 회원 명단입니다. 회원가입을 하면 자동으로 명단에 추가됩니다.${S.loaded?` 현재 ${S.members.length}명`:""}</p></div><div class="toolbar"><input class="search" id="q-members" type="search" placeholder="이름·과정·직장 검색" value="${esc(S.q.members||"")}">${btns}</div></div>${inner}`;
+    :!list.length?`<div class="panel"><div class="empty">${q||fc?"검색 결과가 없습니다.":"아직 등록된 회원이 없습니다."}</div></div>`
+    :`<div class="tablewrap"><table><thead><tr><th>번호</th><th>기수</th><th>성명</th><th>과정</th><th>입학</th><th>직장·직위</th><th>연구분야</th><th>이메일</th>${ah}<th></th></tr></thead><tbody>${list.map((m,i)=>`<tr><td class="num">${i+1}</td><td class="num" style="color:var(--ink);font-weight:600">${m.gen?esc(m.gen)+"기":"—"}</td><td style="white-space:nowrap;font-weight:600">${esc(m.name)}${m.userId&&m.userId===S.myId?' <span class="kind">나</span>':""}${adm&&m.userId&&S.admins.includes(m.userId)?' <span class="adm">관리자</span>':""}</td><td><span class="kind ${courseClass(m.course)}">${esc(m.course)}</span></td><td class="num">${esc(m.year)}</td><td style="white-space:nowrap">${esc(m.org)}</td><td style="white-space:nowrap">${esc(m.field)}</td><td style="white-space:nowrap">${esc(m.email)}</td>${ac(m)}<td class="num" style="white-space:nowrap">${(adm||(m.userId&&m.userId===S.myId))?`<button class="btn sm ghost" data-mem="${m.id}">수정</button>`:""}${adm&&m.userId!==S.myId?` <button class="btn sm danger" data-out="${m.id}">탈퇴</button>`:""}</td></tr>`).join("")}</tbody></table></div>`;
+  /* 관리자: 가입은 했지만 명단에 없는 계정 */
+  let orphan="";
+  if(adm&&S.usersOk){const has=new Set(S.members.map(m=>m.userId).filter(Boolean));
+    const os=S.users.filter(u=>!has.has(u.id)&&(!q||String(u.email).toLowerCase().includes(q)));
+    if(os.length)orphan=`<h3 class="sub-h">명단에 없는 가입 계정 <small>${os.length}개</small></h3><div class="tablewrap"><table><thead><tr><th>로그인 계정</th><th>가입일</th><th>최근 접속</th><th></th></tr></thead><tbody>${os.map(u=>`<tr><td>${esc(u.email)}${S.admins.includes(u.id)?' <span class="adm">관리자</span>':""}</td><td class="num">${fmt(u.created_at)}</td><td class="num">${u.last_sign_in_at?fmt(u.last_sign_in_at):"—"}</td><td class="num">${u.id!==S.myId?`<button class="btn sm danger" data-uout="${u.id}">탈퇴</button>`:""}</td></tr>`).join("")}</tbody></table></div>`}
+  const note=adm&&!S.usersOk&&S.loaded?`<div class="notice" style="margin-bottom:14px">회원관리 기능(로그인 계정·가입일·탈퇴 처리)을 쓰려면 Supabase에서 회원관리 SQL을 한 번 실행해야 합니다.</div>`:"";
+  el.innerHTML=`<div class="sec-h"><div><h2>회원${adm?' <small class="adm">관리자 보기</small>':""}</h2><p>레이브랩 회원 명단입니다. 회원가입을 하면 자동으로 명단에 추가됩니다.${S.loaded?` 현재 ${S.members.length}명`:""}</p></div><div class="toolbar"><input class="search" id="q-members" type="search" placeholder="${adm?"이름·과정·직장·이메일 검색":"이름·과정·직장 검색"}" value="${esc(S.q.members||"")}">${btns}</div></div>${note}${chips}${inner}${orphan}`;
   const qi=$("#q-members");qi.oninput=()=>{S.q.members=qi.value;renderMembers()};
   if(keep){qi.focus();qi.setSelectionRange(qi.value.length,qi.value.length)}
+  el.querySelectorAll("[data-mf]").forEach(x=>x.onclick=()=>{S.f.members=x.dataset.mf;renderMembers()});
   const j=$("#m-join");j&&(j.onclick=()=>editMember({},true));
   const mi=$("#m-mine");mi&&(mi.onclick=()=>editMember(mineRow,true));
   const ad=$("#m-add");ad&&(ad.onclick=()=>editMember({},false));
   el.querySelectorAll("[data-mem]").forEach(b=>b.onclick=()=>{const m=S.members.find(x=>x.id===b.dataset.mem);editMember(m,m.userId===S.myId)});
+  el.querySelectorAll("[data-out]").forEach(b=>b.onclick=()=>{const m=S.members.find(x=>x.id===b.dataset.out);withdraw(m.name,m.userId,m.id)});
+  el.querySelectorAll("[data-uout]").forEach(b=>b.onclick=()=>{const u=S.users.find(x=>x.id===b.dataset.uout);withdraw(u.email,u.id,null)});
+}
+/* 관리자: 탈퇴 처리 (명단 삭제 + 로그인 계정 삭제) */
+function withdraw(label,userId,memberId){
+  const m=modal(`<h2>탈퇴 처리</h2><div class="content"><b>${esc(label)}</b> 님을 탈퇴 처리할까요?<br><br>${userId?"회원 명단에서 빠지고 로그인 계정도 삭제되어 더 이상 로그인할 수 없습니다.":"관리자가 직접 추가한 명단이라 로그인 계정은 없고, 명단에서만 빠집니다."} 이 사람이 올린 글과 사진은 남습니다. 되돌릴 수 없습니다.</div><div class="err" id="werr"></div>
+    <div class="actions"><button class="btn ghost" id="wc">취소</button><button class="btn danger" id="wy">탈퇴 처리</button></div>`);
+  m.querySelector("#wc").onclick=close;
+  m.querySelector("#wy").onclick=async()=>{const b=$("#wy");b.disabled=true;
+    try{
+      if(userId){const r=await sb.rpc("admin_delete_user",{target:userId});
+        if(r.error){if(/admin_delete_user|function/i.test(r.error.message||""))throw {message:"Supabase에서 회원관리 SQL을 먼저 실행해 주세요."};throw r.error}}
+      else must(await sb.from("members").delete().eq("id",memberId));
+      close();toast("탈퇴 처리했습니다");loadAll();
+    }catch(e){b.disabled=false;$("#werr").textContent="처리하지 못했습니다. "+errMsg(e)}};
 }
 function editMember(m,self){
   m=Object.assign({name:"",gen:"",course:"",year:"",phone:"",email:"",org:"",field:""},m||{});const isNew=!m.id;

@@ -209,3 +209,6 @@ img{max-width:100%}
 .ftabs button[aria-pressed="true"]{background:#12305a;border-color:#12305a;color:#fff}
 .ftabs button[aria-pressed="true"] small{color:#d9b864}
 .card .cb .kind{justify-self:start}
+.sub-h{font-size:15px;margin:28px 0 10px}
+.sub-h small{color:var(--muted);font-weight:500;margin-left:4px}
+h2 small.adm{font-size:11px;vertical-align:middle;margin-left:6px}
