@@ -201,12 +201,11 @@ function memberFields(m){return `
     <div class="row2"><label for="m-name">성명<input id="m-name" name="name" required value="${esc(m.name)}"></label>
     <label for="m-course">과정<select id="m-course" name="course">${COURSES.map(c=>`<option${c===m.course?" selected":""}>${c}</option>`).join("")}</select></label></div>
     <div class="row2"><label for="m-gen">기수 (숫자만, 예: 3)<input id="m-gen" name="gen" type="number" min="1" max="200" required value="${esc(m.gen)}"></label><label for="m-year">입학 연도 (선택)<input id="m-year" name="year" type="number" min="1990" max="2100" value="${esc(m.year)}"></label></div>
-    <label for="m-phone">전화번호 (회원끼리만 보입니다)<input id="m-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="예: 010-1234-5678" value="${esc(m.phone)}"></label>
     <label for="m-email">명단에 표시할 이메일 (선택)<input id="m-email" name="email" type="email" value="${esc(m.email)}"></label>
     <label for="m-org">직장·직위 (선택)<input id="m-org" name="org" placeholder="예: ○○공사 차장" value="${esc(m.org)}"></label>
     <label for="m-field">연구분야<input id="m-field" name="field" placeholder="예: 전세시장, 머신러닝" value="${esc(m.field)}"></label>`}
-function readMember(fd){const d={};["name","gen","course","year","phone","email","org","field"].forEach(k=>d[k]=(fd.get(k)||"").toString().trim());
-  return {name:d.name,phone:nz(d.phone),gen:num(d.gen),course:d.course,year:num(d.year),email:nz(d.email),org:nz(d.org),field:nz(d.field)}}
+function readMember(fd){const d={};["name","gen","course","year","email","org","field"].forEach(k=>d[k]=(fd.get(k)||"").toString().trim());
+  return {name:d.name,gen:num(d.gen),course:d.course,year:num(d.year),email:nz(d.email),org:nz(d.org),field:nz(d.field)}}
 function signupModal(){
   if(!sb){toast("홈페이지 설정(Supabase 연결)이 아직 끝나지 않았습니다");return}
   if(S.session){editMember({},true);return}
@@ -366,13 +365,13 @@ function renderMembers(){
   const q=(S.q.members||"").trim().toLowerCase();
   const keep=document.activeElement&&document.activeElement.id==="q-members";
   const mineRow=myMember();
-  const list=S.members.filter(m=>!q||[m.name,m.course,m.year,m.org,m.field,m.phone,m.gen?m.gen+"기":""].join(" ").toLowerCase().includes(q))
+  const list=S.members.filter(m=>!q||[m.name,m.course,m.year,m.org,m.field,m.gen?m.gen+"기":""].join(" ").toLowerCase().includes(q))
     .sort((a,b)=>(Number(a.gen)||9999)-(Number(b.gen)||9999)||(COURSES.indexOf(a.course)+1||99)-(COURSES.indexOf(b.course)+1||99)||String(a.name).localeCompare(String(b.name),"ko"));
   let btns=mineRow?`<button class="btn ghost" id="m-mine">내 회원정보 수정</button>`:`<button class="btn" id="m-join">명단에 내 정보 등록</button>`;
   if(S.canEdit)btns+=`<button class="btn ghost" id="m-add">회원 추가</button>`;
   const inner=!S.loaded?`<div class="panel"><div class="empty">불러오는 중…</div></div>`
     :!list.length?`<div class="panel"><div class="empty">${q?"검색 결과가 없습니다.":"아직 등록된 회원이 없습니다."}</div></div>`
-    :`<div class="tablewrap"><table><thead><tr><th>번호</th><th>기수</th><th>성명</th><th>과정</th><th>입학</th><th>직장·직위</th><th>연구분야</th><th>전화번호</th><th>이메일</th><th></th></tr></thead><tbody>${list.map((m,i)=>`<tr><td class="num">${i+1}</td><td class="num" style="color:var(--ink);font-weight:600">${m.gen?esc(m.gen)+"기":"—"}</td><td style="white-space:nowrap;font-weight:600">${esc(m.name)}${m.userId&&m.userId===S.myId?' <span class="kind">나</span>':""}${S.canEdit&&m.userId&&S.admins.includes(m.userId)?' <span class="adm">관리자</span>':""}</td><td><span class="kind ${courseClass(m.course)}">${esc(m.course)}</span></td><td class="num">${esc(m.year)}</td><td>${esc(m.org)}</td><td>${esc(m.field)}</td><td style="white-space:nowrap">${m.phone?`<a href="tel:${esc(m.phone.replace(/[^0-9+]/g,""))}">${esc(m.phone)}</a>`:""}</td><td style="white-space:nowrap">${esc(m.email)}</td><td class="num">${(S.canEdit||(m.userId&&m.userId===S.myId))?`<button class="btn sm ghost" data-mem="${m.id}">수정</button>`:""}</td></tr>`).join("")}</tbody></table></div>`;
+    :`<div class="tablewrap"><table><thead><tr><th>번호</th><th>기수</th><th>성명</th><th>과정</th><th>입학</th><th>직장·직위</th><th>연구분야</th><th>이메일</th><th></th></tr></thead><tbody>${list.map((m,i)=>`<tr><td class="num">${i+1}</td><td class="num" style="color:var(--ink);font-weight:600">${m.gen?esc(m.gen)+"기":"—"}</td><td style="white-space:nowrap;font-weight:600">${esc(m.name)}${m.userId&&m.userId===S.myId?' <span class="kind">나</span>':""}${S.canEdit&&m.userId&&S.admins.includes(m.userId)?' <span class="adm">관리자</span>':""}</td><td><span class="kind ${courseClass(m.course)}">${esc(m.course)}</span></td><td class="num">${esc(m.year)}</td><td>${esc(m.org)}</td><td>${esc(m.field)}</td><td style="white-space:nowrap">${esc(m.email)}</td><td class="num">${(S.canEdit||(m.userId&&m.userId===S.myId))?`<button class="btn sm ghost" data-mem="${m.id}">수정</button>`:""}</td></tr>`).join("")}</tbody></table></div>`;
   el.innerHTML=`<div class="sec-h"><div><h2>회원</h2><p>레이브랩 회원 명단입니다. 회원가입을 하면 자동으로 명단에 추가됩니다.${S.loaded?` 현재 ${S.members.length}명`:""}</p></div><div class="toolbar"><input class="search" id="q-members" type="search" placeholder="이름·과정·직장 검색" value="${esc(S.q.members||"")}">${btns}</div></div>${inner}`;
   const qi=$("#q-members");qi.oninput=()=>{S.q.members=qi.value;renderMembers()};
   if(keep){qi.focus();qi.setSelectionRange(qi.value.length,qi.value.length)}
