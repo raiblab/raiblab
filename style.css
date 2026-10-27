@@ -263,16 +263,15 @@ body.is-intro header.top{background:color-mix(in srgb,var(--intro-bg) 94%,transp
 .intro h1{font-size:clamp(30px,4.6vw,50px);font-weight:700;letter-spacing:-.02em;line-height:1.25;margin:0 0 26px;color:var(--ink)}
 .intro p{max-width:40em;margin:0 0 36px;font-size:17px;line-height:1.9;color:var(--ink);opacity:.85;text-wrap:pretty}
 .intro p{margin-bottom:26px}
-.intro p{margin-bottom:34px}
-/* 로고 단추 */
-.intro-go{display:grid;justify-items:center;gap:8px;text-decoration:none;color:var(--navy);background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 26px 12px;box-shadow:0 2px 6px rgba(18,48,90,.06),0 10px 24px rgba(18,48,90,.08);transition:transform .2s ease,box-shadow .2s ease,border-color .2s}
-.intro-go img{width:min(150px,40vw);height:auto;display:block}
-.intro-go span{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);transition:color .2s}
-.intro-go:hover{transform:translateY(-3px);border-color:var(--navy-2);box-shadow:0 4px 10px rgba(18,48,90,.08),0 16px 34px rgba(18,48,90,.14)}
-.intro-go:hover span{color:var(--navy)}
-.intro-go:active{transform:translateY(0) scale(.98);box-shadow:0 2px 6px rgba(18,48,90,.10)}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .intro-go{border-color:transparent}}
-:root[data-theme="dark"] .intro-go{border-color:transparent}
+.intro-logo{width:min(260px,62vw);height:auto;display:block;margin:0 0 34px;mix-blend-mode:multiply}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .intro-logo{mix-blend-mode:normal;background:#fff;border-radius:12px;padding:14px}}
+:root[data-theme="dark"] .intro-logo{mix-blend-mode:normal;background:#fff;border-radius:12px;padding:14px}
+/* 파란 단추 */
+.intro-go{display:inline-block;background:var(--navy);color:#fff;text-decoration:none;font-weight:700;font-size:16px;letter-spacing:.01em;padding:14px 30px;border-radius:8px;transition:background .2s,transform .2s,box-shadow .2s}
+.intro-go:hover{background:var(--navy-2);transform:translateY(-2px);box-shadow:0 8px 20px rgba(18,48,90,.18)}
+.intro-go:active{transform:none;box-shadow:none}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .intro-go{background:#2a5aa0}}
+:root[data-theme="dark"] .intro-go{background:#2a5aa0}
 .br-m{display:none}
 @media (max-width:560px){.br-m{display:inline}.intro p{font-size:15.5px}.intro-in{padding-block:56px 64px}}
 
