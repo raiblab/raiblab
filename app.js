@@ -15,7 +15,7 @@ const BUCKET="photos";
 
 /* ---------- 게시판 정의 ---------- */
 const BOARDS={
-  research:{name:"연구실적·공동연구",desc:"논문, 학술발표, 공동연구과제, 저서·보고서를 연도별로 정리합니다.",layout:"research",
+  research:{name:"연구실적·공동연구",desc:"논문, 학술발표, 공동연구과제, 저서·보고서를 연도별로 정리합니다.",layout:"research",filter:"kind",
     fields:[["kind","구분","select",["학술지 논문","학술대회 발표","공동연구과제","저서·보고서"]],["year","연도","number"],["title","제목","text",null,true],["authors","저자·참여연구원","text"],["venue","게재지·발주기관","text"],["link","링크 (선택)","url"],["body","요약 (선택)","textarea"]]},
   conference:{name:"학술대회",desc:"참가·발표한 학술대회와 세미나 기록입니다.",layout:"cards",photo:true,
     fields:[["title","학술대회명","text",null,true],["date","일자","date"],["place","장소","text"],["body","내용","textarea"]]},
@@ -175,6 +175,7 @@ function renderBoard(b){
     list.sort((a,c)=>sortKey(c).localeCompare(sortKey(a)));
     inner=`<div class="cards">${list.map(p=>{const ps=p.photos;return `<button class="card" data-open="${p.id}">${ps.length?`<div class="ph" style="background-image:url('${esc(ps[0].url)}')">${ps.length>1?`<span class="n">사진 ${ps.length}장</span>`:""}</div>`:p.locked?`<div class="ph none lockph"><span>🔒</span><small>정회원 전용</small></div>`:`<div class="ph none">RAIB</div>`}<div class="cb">${p.locked?`<span class="kind lockk">🔒 정회원 전용</span>`:""}${p.kind?`<span class="kind">${esc(p.kind)}</span>`:""}<div class="cm">${fmt(p.date||p.createdAt)}${p.place?" · "+esc(p.place):""}</div><div class="ct">${esc(p.title)}</div>${p.body&&!p.locked?`<div class="cx">${esc(p.body)}</div>`:""}</div></button>`}).join("")}</div>`;
   }else{
+    list.sort((a,c)=>sortKey(c).localeCompare(sortKey(a)));
     const years={};list.forEach(p=>{const y=p.year||"연도 미기재";(years[y]=years[y]||[]).push(p)});
     inner=Object.keys(years).sort((a,c)=>String(c).localeCompare(String(a))).map(y=>`<div class="year-h">${esc(y)}</div><div class="tablewrap"><table><thead><tr><th>구분</th><th>제목</th><th>저자·참여</th><th>게재지·발주기관</th></tr></thead><tbody>${years[y].map(p=>`<tr class="row" data-open="${p.id}"><td><span class="kind">${esc(p.kind)}</span></td><td style="font-weight:600">${p.locked?'<span class="lk">🔒</span>':""}${esc(p.title)}</td><td>${esc(p.authors)}</td><td>${esc(p.venue)}</td></tr>`).join("")}</tbody></table></div>`).join("");
   }
