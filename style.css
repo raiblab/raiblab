@@ -325,3 +325,11 @@ body.is-intro header.top{background:color-mix(in srgb,var(--intro-bg) 94%,transp
 @media (max-width:440px){nav.tabs{gap:13px}nav.tabs a{font-size:13.5px}}
 /* 연구실적: 저자 이름은 한 줄로 */
 td.au{white-space:nowrap}
+/* 연구실적 구분 색: 논문 파랑 · 발표 초록 · 연구과제 주황 · 저서 보라 */
+:root{--jr-bg:#dbe8fb;--jr-fg:#1f56a8;--cf-bg:#dcf3e3;--cf-fg:#1d7a3e;--pj-bg:#fdebd3;--pj-fg:#a65410;--bk-bg:#ece3fa;--bk-fg:#6b3fb8}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--jr-bg:#173057;--jr-fg:#9cc0f5;--cf-bg:#143823;--cf-fg:#8fdcaa;--pj-bg:#45290f;--pj-fg:#f6bd7a;--bk-bg:#2e2148;--bk-fg:#c7aef3}}
+:root[data-theme="dark"]{--jr-bg:#173057;--jr-fg:#9cc0f5;--cf-bg:#143823;--cf-fg:#8fdcaa;--pj-bg:#45290f;--pj-fg:#f6bd7a;--bk-bg:#2e2148;--bk-fg:#c7aef3}
+.kind.k-jr{background:var(--jr-bg);color:var(--jr-fg);font-weight:600}
+.kind.k-cf{background:var(--cf-bg);color:var(--cf-fg);font-weight:600}
+.kind.k-pj{background:var(--pj-bg);color:var(--pj-fg);font-weight:600}
+.kind.k-bk{background:var(--bk-bg);color:var(--bk-fg);font-weight:600}

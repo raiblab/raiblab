@@ -29,6 +29,9 @@ const BOARDS={
 const TABS=[["home","홈"],["greeting","교수님 인사말"],["chair","회장 인사말"],["officers","임원·회원"],["research","연구실적"],["conference","학술대회"],["news","연구실 동정"],["edu","미래교육원"],["golf","친목도모"]];
 /* 위쪽 메뉴 5개(영어) — 각 메뉴 아래에 한글 하위 메뉴 */
 const GROUPS=[["About","소개",["greeting","chair"]],["Members","구성원",["officers"]],["Publications","연구실적",["research"]],["News","소식",["news","conference"]],["Community","커뮤니티",["edu","golf"]]];
+/* 연구실적 구분별 색 */
+const KCLS={"학술지 논문":"k-jr","학술대회 발표":"k-cf","공동연구과제":"k-pj","저서·보고서":"k-bk"};
+const kcls=k=>KCLS[k]||"";
 const groupOf=k=>GROUPS.find(g=>g[2].includes(k));
 const tabName=k=>(TABS.find(t=>t[0]===k)||[])[1]||"";
 
@@ -173,11 +176,11 @@ function renderBoard(b){
   else if(!list.length)inner=`<div class="panel"><div class="empty">${q?"검색 결과가 없습니다.":"아직 등록된 글이 없습니다."+(canWrite()?" ‘글쓰기’로 첫 글을 올려 주세요.":"")}</div></div>`;
   else if(cfg.layout==="cards"){
     list.sort((a,c)=>sortKey(c).localeCompare(sortKey(a)));
-    inner=`<div class="cards">${list.map(p=>{const ps=p.photos;return `<button class="card" data-open="${p.id}">${ps.length?`<div class="ph" style="background-image:url('${esc(ps[0].url)}')">${ps.length>1?`<span class="n">사진 ${ps.length}장</span>`:""}</div>`:p.locked?`<div class="ph none lockph"><span>🔒</span><small>정회원 전용</small></div>`:`<div class="ph none">RAIB</div>`}<div class="cb">${p.locked?`<span class="kind lockk">🔒 정회원 전용</span>`:""}${p.kind?`<span class="kind">${esc(p.kind)}</span>`:""}<div class="cm">${fmt(p.date||p.createdAt)}${p.place?" · "+esc(p.place):""}</div><div class="ct">${esc(p.title)}</div>${p.body&&!p.locked?`<div class="cx">${esc(p.body)}</div>`:""}</div></button>`}).join("")}</div>`;
+    inner=`<div class="cards">${list.map(p=>{const ps=p.photos;return `<button class="card" data-open="${p.id}">${ps.length?`<div class="ph" style="background-image:url('${esc(ps[0].url)}')">${ps.length>1?`<span class="n">사진 ${ps.length}장</span>`:""}</div>`:p.locked?`<div class="ph none lockph"><span>🔒</span><small>정회원 전용</small></div>`:`<div class="ph none">RAIB</div>`}<div class="cb">${p.locked?`<span class="kind lockk">🔒 정회원 전용</span>`:""}${p.kind?`<span class="kind ${kcls(p.kind)}">${esc(p.kind)}</span>`:""}<div class="cm">${fmt(p.date||p.createdAt)}${p.place?" · "+esc(p.place):""}</div><div class="ct">${esc(p.title)}</div>${p.body&&!p.locked?`<div class="cx">${esc(p.body)}</div>`:""}</div></button>`}).join("")}</div>`;
   }else{
     list.sort((a,c)=>(Number(c.year)||0)-(Number(a.year)||0)||sortKey(c).localeCompare(sortKey(a))||String(a.title).localeCompare(String(c.title)));
     const years={};list.forEach(p=>{const y=p.year||"연도 미기재";(years[y]=years[y]||[]).push(p)});
-    inner=Object.keys(years).sort((a,c)=>String(c).localeCompare(String(a))).map(y=>`<div class="year-h">${esc(y)}</div><div class="tablewrap"><table><thead><tr><th>구분</th><th>제목</th><th>저자·참여</th><th>게재지·발주기관</th></tr></thead><tbody>${years[y].map(p=>`<tr class="row" data-open="${p.id}"><td><span class="kind">${esc(p.kind)}</span></td><td style="font-weight:600">${p.locked?'<span class="lk">🔒</span>':""}${esc(p.title)}</td><td class="au">${esc(p.authors)}</td><td>${esc(p.venue)}</td></tr>`).join("")}</tbody></table></div>`).join("");
+    inner=Object.keys(years).sort((a,c)=>String(c).localeCompare(String(a))).map(y=>`<div class="year-h">${esc(y)}</div><div class="tablewrap"><table><thead><tr><th>구분</th><th>제목</th><th>저자·참여</th><th>게재지·발주기관</th></tr></thead><tbody>${years[y].map(p=>`<tr class="row" data-open="${p.id}"><td><span class="kind ${kcls(p.kind)}">${esc(p.kind)}</span></td><td style="font-weight:600">${p.locked?'<span class="lk">🔒</span>':""}${esc(p.title)}</td><td class="au">${esc(p.authors)}</td><td>${esc(p.venue)}</td></tr>`).join("")}</tbody></table></div>`).join("");
   }
   el.innerHTML=`<div class="sec-h"><div><h2>${cfg.name}</h2><p>${cfg.desc}</p></div><div class="toolbar"><input class="search" id="q-${b}" type="search" placeholder="검색" value="${esc(S.q[b]||"")}">${canWrite()?`<button class="btn" id="w-${b}">글쓰기</button>`:(S.session?"":`<button class="btn ghost" id="w-login">로그인하고 글쓰기</button>`)}</div></div>${cfg.filter?`<div class="ftabs">${[""].concat(cfg.fields.find(f=>f[0]===cfg.filter)[3]).map(o=>`<button type="button" data-f="${esc(o)}"${o===fv?' aria-pressed="true"':""}>${o?esc(o):"전체"} <small>${o?postsOf(b).filter(p=>p[cfg.filter]===o).length:postsOf(b).length}</small></button>`).join("")}</div>`:""}${inner}`;
   el.querySelectorAll("[data-f]").forEach(x=>x.onclick=()=>{S.f[b]=x.dataset.f;renderBoard(b)});
