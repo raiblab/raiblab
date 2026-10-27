@@ -230,10 +230,12 @@ function loginModal(){
   setTimeout(()=>$("#lg-email").focus(),30);
 }
 const COURSES=["박사과정","박사수료","박사"];
+/* 화면에 보이는 과정 이름(저장값은 그대로) */
+const courseLabel=c=>c==="박사"?"Ph.D.":c;
 const courseClass=c=>({"박사":"c-doc","박사수료":"c-abd","박사과정":"c-cand"})[c]||"";
 function memberFields(m){return `
     <div class="row2"><label for="m-name">성명<input id="m-name" name="name" required value="${esc(m.name)}"></label>
-    <label for="m-course">과정<select id="m-course" name="course">${COURSES.map(c=>`<option${c===m.course?" selected":""}>${c}</option>`).join("")}</select></label></div>
+    <label for="m-course">과정<select id="m-course" name="course">${COURSES.map(c=>`<option value="${c}"${c===m.course?" selected":""}>${courseLabel(c)}</option>`).join("")}</select></label></div>
     <div class="row2"><label for="m-gen">기수 (숫자만, 예: 3)<input id="m-gen" name="gen" type="number" min="1" max="200" required value="${esc(m.gen)}"></label><label for="m-year">입학 연도 (선택)<input id="m-year" name="year" type="number" min="1990" max="2100" value="${esc(m.year)}"></label></div>
     <label for="m-email">명단에 표시할 이메일 (선택)<input id="m-email" name="email" type="email" value="${esc(m.email)}"></label>
     <label for="m-org">직장·직위 (선택)<input id="m-org" name="org" placeholder="예: ○○공사 차장" value="${esc(m.org)}"></label>
@@ -441,14 +443,14 @@ function renderMembers(){
     .sort((a,b)=>(Number(a.gen)||9999)-(Number(b.gen)||9999)||(COURSES.indexOf(a.course)+1||99)-(COURSES.indexOf(b.course)+1||99)||String(a.name).localeCompare(String(b.name),"ko"));
   let btns=mineRow?`<button class="btn ghost" id="m-mine">내 회원정보 수정</button>`:`<button class="btn" id="m-join">명단에 내 정보 등록</button>`;
   if(adm)btns+=`<button class="btn ghost" id="m-add">회원 추가</button>`;
-  const chips=`<div class="ftabs">${[""].concat(COURSES).map(c=>`<button type="button" data-mf="${esc(c)}"${c===fc?' aria-pressed="true"':""}>${c||"전체"} <small>${c?S.members.filter(m=>m.course===c).length:S.members.length}</small></button>`).join("")}</div>`;
+  const chips=`<div class="ftabs">${[""].concat(COURSES).map(c=>`<button type="button" data-mf="${esc(c)}"${c===fc?' aria-pressed="true"':""}>${c?esc(courseLabel(c)):"전체"} <small>${c?S.members.filter(m=>m.course===c).length:S.members.length}</small></button>`).join("")}</div>`;
   const ah=adm?"<th>로그인 계정</th><th>가입일</th><th>최근 접속</th>":"";
   const ac=m=>{if(!adm)return"";const u=U[m.userId];
     return u?`<td style="white-space:nowrap">${esc(u.email)}</td><td class="num">${fmt(u.created_at)}</td><td class="num">${u.last_sign_in_at?fmt(u.last_sign_in_at):"—"}</td>`
       :`<td style="white-space:nowrap;color:var(--muted)">${m.userId?(S.usersOk?"—":"…"):"계정 없음"}</td><td class="num">${fmt(m.joinedAt)}</td><td class="num">—</td>`};
   const inner=!S.loaded?`<div class="panel"><div class="empty">불러오는 중…</div></div>`
     :!list.length?`<div class="panel"><div class="empty">${q||fc?"검색 결과가 없습니다.":"아직 등록된 회원이 없습니다."}</div></div>`
-    :`<div class="tablewrap"><table><thead><tr><th>번호</th><th>기수</th><th>성명</th><th>과정</th><th>입학</th><th>직장·직위</th><th>연구분야</th><th>이메일</th>${ah}<th></th></tr></thead><tbody>${list.map((m,i)=>`<tr><td class="num">${i+1}</td><td class="num" style="color:var(--ink);font-weight:600">${m.gen?esc(m.gen)+"기":"—"}</td><td style="white-space:nowrap;font-weight:600">${esc(m.name)}${m.userId&&m.userId===S.myId?' <span class="kind">나</span>':""}${adm&&m.userId&&S.admins.includes(m.userId)?' <span class="adm">관리자</span>':""}</td><td><span class="kind ${courseClass(m.course)}">${esc(m.course)}</span></td><td class="num">${esc(m.year)}</td><td style="white-space:nowrap">${esc(m.org)}</td><td style="white-space:nowrap">${esc(m.field)}</td><td style="white-space:nowrap">${esc(m.email)}</td>${ac(m)}<td class="num" style="white-space:nowrap">${(adm||(m.userId&&m.userId===S.myId))?`<button class="btn sm ghost" data-mem="${m.id}">수정</button>`:""}${adm&&m.userId!==S.myId?` <button class="btn sm danger" data-out="${m.id}">탈퇴</button>`:""}</td></tr>`).join("")}</tbody></table></div>`;
+    :`<div class="tablewrap"><table><thead><tr><th>번호</th><th>기수</th><th>성명</th><th>과정</th><th>입학</th><th>직장·직위</th><th>연구분야</th><th>이메일</th>${ah}<th></th></tr></thead><tbody>${list.map((m,i)=>`<tr><td class="num">${i+1}</td><td class="num" style="color:var(--ink);font-weight:600">${m.gen?esc(m.gen)+"기":"—"}</td><td style="white-space:nowrap;font-weight:600">${esc(m.name)}${m.userId&&m.userId===S.myId?' <span class="kind">나</span>':""}${adm&&m.userId&&S.admins.includes(m.userId)?' <span class="adm">관리자</span>':""}</td><td><span class="kind ${courseClass(m.course)}">${esc(courseLabel(m.course))}</span></td><td class="num">${esc(m.year)}</td><td style="white-space:nowrap">${esc(m.org)}</td><td style="white-space:nowrap">${esc(m.field)}</td><td style="white-space:nowrap">${esc(m.email)}</td>${ac(m)}<td class="num" style="white-space:nowrap">${(adm||(m.userId&&m.userId===S.myId))?`<button class="btn sm ghost" data-mem="${m.id}">수정</button>`:""}${adm&&m.userId!==S.myId?` <button class="btn sm danger" data-out="${m.id}">탈퇴</button>`:""}</td></tr>`).join("")}</tbody></table></div>`;
   /* 관리자: 가입은 했지만 명단에 없는 계정 */
   let orphan="";
   if(adm&&S.usersOk){const has=new Set(S.members.map(m=>m.userId).filter(Boolean));
