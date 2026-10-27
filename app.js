@@ -92,7 +92,7 @@ function go(k){
   /* 표지(첫 화면): 주소 뒤에 #이 없을 때 */
   const intro=!k||k==="intro";
   document.body.classList.toggle("is-intro",intro);$("#intro").hidden=!intro;
-  if(intro){current="intro";window.scrollTo(0,0);return}
+  if(intro){current="intro";document.querySelectorAll(".view").forEach(v=>v.hidden=true);document.querySelectorAll("#tabs a").forEach(a=>a.removeAttribute("aria-current"));renderPageHead("");window.scrollTo(0,0);return}
   if(k==="members")k="officers";
   if(!TABS.some(t=>t[0]===k))k="home";
   current=k;
@@ -104,7 +104,8 @@ function go(k){
   render();window.scrollTo(0,0);
   if(!popShown&&S.loaded){popShown=true;showPopups()}
 }
-document.addEventListener("click",e=>{const a=e.target.closest('a[href^="#"]');if(!a)return;const k=a.getAttribute("href").slice(1);if(TABS.some(t=>t[0]===k)){e.preventDefault();history[current==="intro"?"pushState":"replaceState"](null,"","#"+k);go(k)}});
+document.addEventListener("click",e=>{const a=e.target.closest('a[href^="#"]');if(!a)return;const k=a.getAttribute("href").slice(1);
+  if(k==="intro"){e.preventDefault();if(current!=="intro"){history.pushState(null,"",location.pathname+location.search);go("")}return}if(TABS.some(t=>t[0]===k)){e.preventDefault();history[current==="intro"?"pushState":"replaceState"](null,"","#"+k);go(k)}});
 
 /* ---------- 렌더 ---------- */
 function postsOf(b){return S.posts.filter(p=>p.board===b)}
