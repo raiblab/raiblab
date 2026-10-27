@@ -67,7 +67,7 @@ async function loadAll(){
     const L={};(l.data||[]).forEach(r=>L[r.post_id]=r);
     S.posts.forEach(p=>{const r=L[p.id];if(p.locked&&r){p.body=r.body||"";p.photos=Array.isArray(r.photos)?r.photos:[];p.lockLoaded=true}})}
   S.loaded=true;render();
-  if(!popShown){popShown=true;showPopups()}
+  if(!popShown&&current!=="intro"){popShown=true;showPopups()}
 }
 async function loadAuth(session){
   S.session=session||null;S.myId=session?session.user.id:null;S.myEmail=session?session.user.email:"";S.canEdit=false;
@@ -89,6 +89,10 @@ function renderPageHead(k){
   ph.innerHTML=`<div class="ph-t"><h1>${g[0]}</h1><span>${g[1]}</span></div>${g[2].length>1?`<nav class="subnav" aria-label="${g[1]} 하위 메뉴">${g[2].map(x=>`<a href="#${x}"${x===k?' aria-current="page"':""}>${tabName(x)}</a>`).join("")}</nav>`:""}`;
 }
 function go(k){
+  /* 표지(첫 화면): 주소 뒤에 #이 없을 때 */
+  const intro=!k||k==="intro";
+  document.body.classList.toggle("is-intro",intro);$("#intro").hidden=!intro;
+  if(intro){current="intro";window.scrollTo(0,0);return}
   if(k==="members")k="officers";
   if(!TABS.some(t=>t[0]===k))k="home";
   current=k;
@@ -98,8 +102,9 @@ function go(k){
   const act=document.querySelector("#tabs a[aria-current]");act&&act.scrollIntoView({block:"nearest",inline:"nearest"});
   renderPageHead(k);
   render();window.scrollTo(0,0);
+  if(!popShown&&S.loaded){popShown=true;showPopups()}
 }
-document.addEventListener("click",e=>{const a=e.target.closest('a[href^="#"]');if(!a)return;const k=a.getAttribute("href").slice(1);if(TABS.some(t=>t[0]===k)){e.preventDefault();history.replaceState(null,"","#"+k);go(k)}});
+document.addEventListener("click",e=>{const a=e.target.closest('a[href^="#"]');if(!a)return;const k=a.getAttribute("href").slice(1);if(TABS.some(t=>t[0]===k)){e.preventDefault();history[current==="intro"?"pushState":"replaceState"](null,"","#"+k);go(k)}});
 
 /* ---------- 렌더 ---------- */
 function postsOf(b){return S.posts.filter(p=>p.board===b)}
@@ -126,11 +131,11 @@ function renderWho(){
 }
 function loadingOr(html){return S.loaded?html:`<div class="empty">불러오는 중…</div>`}
 function renderHome(){
-  const COLS=[["News",["news","conference"]],["Publications",["research"]],["Community",["edu","golf"]]];
-  $("#home-grid").innerHTML=COLS.map(([t,bs])=>{
-    const list=bs.flatMap(postsOf).sort((a,c)=>sortKey(c).localeCompare(sortKey(a))).slice(0,5);
-    const items=list.length?`<ul class="mini">${list.map(p=>`<li><a href="#${p.board}" data-open="${p.id}">${p.locked?'<span class="lk" aria-label="정회원 전용">🔒</span>':""}${esc(p.title)}</a><span class="mi"><small>${esc(tabName(p.board))}</small><time>${fmt(p.date||p.createdAt)}</time></span></li>`).join("")}</ul>`:`<div class="empty">아직 등록된 글이 없습니다.</div>`;
-    return `<div class="panel"><h3>${t}<a href="#${bs[0]}">더 보기 →</a></h3>${loadingOr(items)}</div>`;
+  const HB=["news","conference","research","edu","golf"];
+  $("#home-grid").innerHTML=HB.map((b,i)=>{
+    const list=postsOf(b).sort((a,c)=>sortKey(c).localeCompare(sortKey(a))).slice(0,5);
+    const items=list.length?`<ul class="mini">${list.map(p=>`<li><a href="#${b}" data-open="${p.id}">${p.locked?'<span class="lk" aria-label="정회원 전용">🔒</span>':""}${esc(p.title)}</a><time>${fmt(p.date||p.createdAt)}</time></li>`).join("")}</ul>`:`<div class="empty">아직 등록된 글이 없습니다.</div>`;
+    return `<div class="panel${HB.length%2&&i===HB.length-1?" wide":""}"><h3>${BOARDS[b].name}<a href="#${b}">전체 보기 →</a></h3>${loadingOr(items)}</div>`;
   }).join("");
 }
 function renderLetter(key,title,role,defName,aff){
@@ -611,7 +616,8 @@ function newPasswordModal(){
 
 /* ---------- 시작 ---------- */
 let rzT;addEventListener("resize",()=>{clearTimeout(rzT);rzT=setTimeout(()=>document.querySelectorAll(".pop:not(.preview)").forEach(el=>el._pp&&placePop(el,el._pp,el._i,false)),150)});
-go((location.hash||"").slice(1).split("&")[0]||"home");
+go((location.hash||"").slice(1).split("&")[0]);
+window.addEventListener("popstate",()=>{const k=(location.hash||"").slice(1).split("&")[0];if(!k||k==="intro")go("")});
 if(!sb){S.loaded=true;render();return}
 sb.auth.onAuthStateChange((ev,session)=>{
   setTimeout(async()=>{
