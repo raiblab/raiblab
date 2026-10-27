@@ -323,3 +323,5 @@ body.is-intro header.top{background:color-mix(in srgb,var(--intro-bg) 94%,transp
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .brand .mark{mix-blend-mode:normal}}
 :root[data-theme="dark"] .brand .mark{mix-blend-mode:normal}
 @media (max-width:440px){nav.tabs{gap:13px}nav.tabs a{font-size:13.5px}}
+/* 연구실적: 저자 이름은 한 줄로 */
+td.au{white-space:nowrap}

@@ -175,9 +175,9 @@ function renderBoard(b){
     list.sort((a,c)=>sortKey(c).localeCompare(sortKey(a)));
     inner=`<div class="cards">${list.map(p=>{const ps=p.photos;return `<button class="card" data-open="${p.id}">${ps.length?`<div class="ph" style="background-image:url('${esc(ps[0].url)}')">${ps.length>1?`<span class="n">사진 ${ps.length}장</span>`:""}</div>`:p.locked?`<div class="ph none lockph"><span>🔒</span><small>정회원 전용</small></div>`:`<div class="ph none">RAIB</div>`}<div class="cb">${p.locked?`<span class="kind lockk">🔒 정회원 전용</span>`:""}${p.kind?`<span class="kind">${esc(p.kind)}</span>`:""}<div class="cm">${fmt(p.date||p.createdAt)}${p.place?" · "+esc(p.place):""}</div><div class="ct">${esc(p.title)}</div>${p.body&&!p.locked?`<div class="cx">${esc(p.body)}</div>`:""}</div></button>`}).join("")}</div>`;
   }else{
-    list.sort((a,c)=>sortKey(c).localeCompare(sortKey(a)));
+    list.sort((a,c)=>(Number(c.year)||0)-(Number(a.year)||0)||sortKey(c).localeCompare(sortKey(a))||String(a.title).localeCompare(String(c.title)));
     const years={};list.forEach(p=>{const y=p.year||"연도 미기재";(years[y]=years[y]||[]).push(p)});
-    inner=Object.keys(years).sort((a,c)=>String(c).localeCompare(String(a))).map(y=>`<div class="year-h">${esc(y)}</div><div class="tablewrap"><table><thead><tr><th>구분</th><th>제목</th><th>저자·참여</th><th>게재지·발주기관</th></tr></thead><tbody>${years[y].map(p=>`<tr class="row" data-open="${p.id}"><td><span class="kind">${esc(p.kind)}</span></td><td style="font-weight:600">${p.locked?'<span class="lk">🔒</span>':""}${esc(p.title)}</td><td>${esc(p.authors)}</td><td>${esc(p.venue)}</td></tr>`).join("")}</tbody></table></div>`).join("");
+    inner=Object.keys(years).sort((a,c)=>String(c).localeCompare(String(a))).map(y=>`<div class="year-h">${esc(y)}</div><div class="tablewrap"><table><thead><tr><th>구분</th><th>제목</th><th>저자·참여</th><th>게재지·발주기관</th></tr></thead><tbody>${years[y].map(p=>`<tr class="row" data-open="${p.id}"><td><span class="kind">${esc(p.kind)}</span></td><td style="font-weight:600">${p.locked?'<span class="lk">🔒</span>':""}${esc(p.title)}</td><td class="au">${esc(p.authors)}</td><td>${esc(p.venue)}</td></tr>`).join("")}</tbody></table></div>`).join("");
   }
   el.innerHTML=`<div class="sec-h"><div><h2>${cfg.name}</h2><p>${cfg.desc}</p></div><div class="toolbar"><input class="search" id="q-${b}" type="search" placeholder="검색" value="${esc(S.q[b]||"")}">${canWrite()?`<button class="btn" id="w-${b}">글쓰기</button>`:(S.session?"":`<button class="btn ghost" id="w-login">로그인하고 글쓰기</button>`)}</div></div>${cfg.filter?`<div class="ftabs">${[""].concat(cfg.fields.find(f=>f[0]===cfg.filter)[3]).map(o=>`<button type="button" data-f="${esc(o)}"${o===fv?' aria-pressed="true"':""}>${o?esc(o):"전체"} <small>${o?postsOf(b).filter(p=>p[cfg.filter]===o).length:postsOf(b).length}</small></button>`).join("")}</div>`:""}${inner}`;
   el.querySelectorAll("[data-f]").forEach(x=>x.onclick=()=>{S.f[b]=x.dataset.f;renderBoard(b)});
@@ -370,6 +370,9 @@ function editPost(b,p){
         const up=await uploadPhoto(it.file);URL.revokeObjectURL(it.url);it.url=up.url;it.path=up.path;delete it.file}
       data.photos=items.map(x=>({url:x.url,path:x.path||""}));
       const row=fromPost(data);
+      /* 이 게시판 입력칸에 없는 값(예: 연구실적의 날짜)은 수정해도 지우지 않습니다 */
+      const keep=new Set(cfg.fields.map(f=>f[0]).concat(["title","photos","author_name"]));
+      Object.keys(row).forEach(k=>{if(!keep.has(k))delete row[k]});
       if(lockOn){
         /* 내용·사진은 잠금 표(post_locks)에만 두고, 공개 표에는 제목만 남깁니다 */
         const body=row.body,photos=row.photos;row.body=null;row.photos=[];row.locked=true;
