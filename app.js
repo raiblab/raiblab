@@ -116,7 +116,7 @@ function sortKey(p){return p.date||p.createdAt||""}
 function render(){
   const sg=$("#signin");if(sg)sg.hidden=!!sb;
   renderWho();renderHome();
-  if(current==="greeting")renderLetter("greeting","교수님 인사말","지도교수","전해정 교수","상명대학교 일반대학원 부동산학 박사 연구실");
+  if(current==="greeting")renderLetter("greeting","교수님 인사말","Lab Director","전해정 교수","상명대학교 일반대학원 부동산학 박사 연구실");
   if(current==="chair")renderLetter("chair","회장 인사말","레이브랩 회장","","레이브랩 RAIB Lab");
   if(current==="officers"){renderOfficers();renderMembers()}
   if(BOARDS[current])renderBoard(current);
@@ -146,8 +146,8 @@ function renderLetter(key,title,role,defName,aff){
   const p=S.pages[key]||{};const el=$("#v-"+key);
   const body=p.body?esc(p.body):`<span class="empty">${S.loaded?"아직 인사말이 등록되지 않았습니다."+(S.canEdit?" 오른쪽 위 ‘인사말 편집’을 눌러 작성해 주세요.":""):"불러오는 중…"}</span>`;
   el.innerHTML=`<div class="sec-h"><div><h2>${title}</h2></div>${S.canEdit?`<button class="btn ghost" id="edit-${key}">인사말 편집</button>`:""}</div>
-  <article class="letter"><aside><div class="role">${esc(p.role||role)}</div><div class="nm">${esc(p.name||defName||"—")}</div><div class="aff">${esc(p.aff||aff)}</div></aside>
-  <div class="body">${p.heading?`<h3>${esc(p.heading)}</h3>`:""}${body}${p.body&&p.name?`<div class="sign">${esc(p.aff||aff)} ${esc(p.role||role)} ${esc(p.name)}</div>`:""}</div></article>`;
+  <article class="letter"><aside><div class="role">${esc(p.role||role)}</div><div class="nm">${esc(p.name||defName||"—")}</div><div class="aff">${esc(p.aff||aff).replace("부동산학 박사","부동산학<br>박사")}</div></aside>
+  <div class="body">${p.heading?`<h3>${esc(p.heading)}</h3>`:""}${body}${p.body&&p.name?`<div class="sign">${esc(p.aff||aff)} ${/^[\x00-\x7F]*$/.test(p.role||role)?"":esc(p.role||role)+" "}${esc(p.name)}</div>`:""}</div></article>`;
   const b=$("#edit-"+key);b&&(b.onclick=()=>editLetter(key,title,role,defName,aff));
 }
 const ROLES=["회장","부회장","총무","감사","이사"];
