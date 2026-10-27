@@ -27,6 +27,10 @@ const BOARDS={
     fields:[["title","제목","text",null,true],["date","일자","date"],["place","장소","text"],["body","내용","textarea"]]}
 };
 const TABS=[["home","홈"],["greeting","교수님 인사말"],["chair","회장 인사말"],["officers","임원·회원"],["research","연구실적"],["conference","학술대회"],["news","연구실 동정"],["edu","미래교육원"],["golf","친목도모"]];
+/* 위쪽 메뉴 5개(영어) — 각 메뉴 아래에 한글 하위 메뉴 */
+const GROUPS=[["About","소개",["greeting","chair"]],["Members","구성원",["officers"]],["Publications","연구실적",["research"]],["News","소식",["news","conference"]],["Community","커뮤니티",["edu","golf"]]];
+const groupOf=k=>GROUPS.find(g=>g[2].includes(k));
+const tabName=k=>(TABS.find(t=>t[0]===k)||[])[1]||"";
 
 /* ---------- 상태 ---------- */
 const S={popups:[],popupsOk:false,unlocked:{},posts:[],pages:{},officers:[],members:[],admins:[],users:[],usersOk:false,loaded:false,f:{},session:null,myId:null,myEmail:"",canEdit:false,q:{}};
@@ -77,14 +81,22 @@ async function save(run,row,cols,msg){const r=await run(row);
   return must(r)}
 
 /* ---------- 탭 ---------- */
-$("#tabs").innerHTML=TABS.map(([k,l])=>`<a href="#${k}" data-k="${k}">${l}</a>`).join("");
+$("#tabs").innerHTML=GROUPS.map(([en,ko,ks])=>`<a href="#${ks[0]}" data-g="${en}" title="${ko}">${en}</a>`).join("");
+function renderPageHead(k){
+  const ph=$("#pagehead"),g=groupOf(k);
+  if(!g){ph.hidden=true;ph.innerHTML="";return}
+  ph.hidden=false;
+  ph.innerHTML=`<div class="ph-t"><h1>${g[0]}</h1><span>${g[1]}</span></div>${g[2].length>1?`<nav class="subnav" aria-label="${g[1]} 하위 메뉴">${g[2].map(x=>`<a href="#${x}"${x===k?' aria-current="page"':""}>${tabName(x)}</a>`).join("")}</nav>`:""}`;
+}
 function go(k){
   if(k==="members")k="officers";
   if(!TABS.some(t=>t[0]===k))k="home";
   current=k;
   document.querySelectorAll(".view").forEach(v=>v.hidden=v.id!=="v-"+k);
-  document.querySelectorAll("#tabs a").forEach(a=>{if(a.dataset.k===k)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
-  const act=document.querySelector(`#tabs a[data-k="${k}"]`);act&&act.scrollIntoView({block:"nearest",inline:"nearest"});
+  const g=groupOf(k);
+  document.querySelectorAll("#tabs a").forEach(a=>{if(g&&a.dataset.g===g[0])a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
+  const act=document.querySelector("#tabs a[aria-current]");act&&act.scrollIntoView({block:"nearest",inline:"nearest"});
+  renderPageHead(k);
   render();window.scrollTo(0,0);
 }
 document.addEventListener("click",e=>{const a=e.target.closest('a[href^="#"]');if(!a)return;const k=a.getAttribute("href").slice(1);if(TABS.some(t=>t[0]===k)){e.preventDefault();history.replaceState(null,"","#"+k);go(k)}});
@@ -114,11 +126,11 @@ function renderWho(){
 }
 function loadingOr(html){return S.loaded?html:`<div class="empty">불러오는 중…</div>`}
 function renderHome(){
-  const HB=["news","conference","research","edu","golf"];
-  $("#home-grid").innerHTML=HB.map((b,i)=>{
-    const list=postsOf(b).sort((a,c)=>sortKey(c).localeCompare(sortKey(a))).slice(0,5);
-    const items=list.length?`<ul class="mini">${list.map(p=>`<li><a href="#${b}" data-open="${p.id}">${p.locked?'<span class="lk" aria-label="정회원 전용">🔒</span>':""}${esc(p.title)}</a><time>${fmt(p.date||p.createdAt)}</time></li>`).join("")}</ul>`:`<div class="empty">아직 등록된 글이 없습니다.</div>`;
-    return `<div class="panel${HB.length%2&&i===HB.length-1?" wide":""}"><h3>${BOARDS[b].name}<a href="#${b}">전체 보기 →</a></h3>${loadingOr(items)}</div>`;
+  const COLS=[["News",["news","conference"]],["Publications",["research"]],["Community",["edu","golf"]]];
+  $("#home-grid").innerHTML=COLS.map(([t,bs])=>{
+    const list=bs.flatMap(postsOf).sort((a,c)=>sortKey(c).localeCompare(sortKey(a))).slice(0,5);
+    const items=list.length?`<ul class="mini">${list.map(p=>`<li><a href="#${p.board}" data-open="${p.id}">${p.locked?'<span class="lk" aria-label="정회원 전용">🔒</span>':""}${esc(p.title)}</a><span class="mi"><small>${esc(tabName(p.board))}</small><time>${fmt(p.date||p.createdAt)}</time></span></li>`).join("")}</ul>`:`<div class="empty">아직 등록된 글이 없습니다.</div>`;
+    return `<div class="panel"><h3>${t}<a href="#${bs[0]}">더 보기 →</a></h3>${loadingOr(items)}</div>`;
   }).join("");
 }
 function renderLetter(key,title,role,defName,aff){

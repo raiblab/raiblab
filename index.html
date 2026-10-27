@@ -16,28 +16,36 @@
 <body>
 <header class="top">
   <div class="wrap bar">
-    <a class="brand" href="#home"><span class="seal"><img src="images/raib-mark.png" alt="레이브랩 로고"></span><b>RAIB Lab</b><span>상명대학교 일반대학원 부동산학 박사 연구실</span></a>
+    <a class="brand" href="#home"><img class="mark" src="images/raib-mark.png" alt=""><span class="bt"><b>RAIB Lab</b><span>상명대학교 일반대학원 부동산학 박사 연구실</span></span></a>
+    <nav class="tabs" aria-label="주요 메뉴" id="tabs"></nav>
     <div class="who" id="who"></div>
   </div>
-  <nav class="tabs" aria-label="주요 메뉴"><div class="wrap" id="tabs"></div></nav>
 </header>
 
 <main class="wrap">
+  <div class="pagehead" id="pagehead" hidden></div>
   <!-- HOME -->
   <section class="view" id="v-home">
     <div class="hero">
-      <div class="emblem"><img class="smu" src="images/smu-emblem.png" alt="상명대학교 엠블럼"><img src="images/raib-logo.png" alt="레이브랩 엠블럼: RAIB Lab, Real Estate AI &amp; Big Data Lab"></div>
-      <div>
-        <div class="eyebrow">Sangmyung University · Real Estate</div>
-        <h1>부동산 AI·빅데이터 연구실</h1>
-        <dl class="facts">
-          <dt>연구실</dt><dd>레이브랩 (RAIB Lab, Real Estate AI &amp; Big Data Lab)</dd>
-          <dt>소속</dt><dd>상명대학교 일반대학원 부동산학 박사 연구실</dd>
-          <dt>지도교수</dt><dd>전해정 교수</dd>
-        </dl>
-        <div class="chips"><span class="chip">부동산 빅데이터</span><span class="chip">머신러닝·설명가능 AI</span><span class="chip">공간분석</span><span class="chip">주택·임대차 정책</span></div>
+      <div class="hero-t">
+        <div class="eyebrow">Sangmyung University · Graduate School · Real Estate</div>
+        <h1>Real Estate<br>AI &amp; Big Data Lab</h1>
+        <p class="ko">상명대학교 일반대학원 부동산학 박사 연구실 · 레이브랩</p>
+        <p class="lead">레이브랩은 부동산 시장과 주거·임대차 문제를 머신러닝, 설명가능 AI, 공간분석 등 데이터 기반 방법론으로 연구합니다. 실증 연구와 정책 제언을 통해 부동산 분야의 데이터 전문가를 길러냅니다.</p>
+        <p class="prof">지도교수 <b>전해정</b> 교수</p>
       </div>
+      <div class="emblem"><img src="images/raib-logo.png" alt="레이브랩 엠블럼: RAIB Lab, Real Estate AI &amp; Big Data Lab"></div>
     </div>
+    <section class="areas" aria-labelledby="areas-h">
+      <h2 class="kicker" id="areas-h">Research Areas</h2>
+      <ol>
+        <li><b>부동산 빅데이터</b><span>실거래가·경매·보증 등 대용량 자료의 구축과 분석</span></li>
+        <li><b>머신러닝·설명가능 AI</b><span>가격 예측 모형과 SHAP 기반 요인 해석</span></li>
+        <li><b>공간분석</b><span>입지와 지역 간 파급효과, 공간계량 모형</span></li>
+        <li><b>주택·임대차 정책</b><span>전세·보증금 위험, 토지거래허가제 등 정책 효과 평가</span></li>
+      </ol>
+    </section>
+    <h2 class="kicker">Latest</h2>
     <div class="home-grid" id="home-grid"></div>
   </section>
 
@@ -51,7 +59,7 @@
   <section class="view" id="v-golf" hidden></section>
 </main>
 
-<footer><div class="wrap"><span>레이브랩 RAIB Lab · 상명대학교 일반대학원 부동산학 박사 연구실 (지도교수 전해정)</span><span>Real Estate AI &amp; Big Data Lab</span></div></footer>
+<footer><div class="wrap"><div class="f-brand"><img src="images/smu-emblem.png" alt="상명대학교 엠블럼"><div><b>RAIB Lab</b><span>Real Estate AI &amp; Big Data Lab</span></div></div><div class="f-txt">상명대학교 일반대학원 부동산학 박사 연구실<br>지도교수 전해정</div></div></footer>
 
 <div id="modal-root"></div>
 
