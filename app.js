@@ -162,7 +162,7 @@ const LETTER_DEFAULTS={chair:{since:"2026-10-28T03:00:00Z",name:"손갑주",role
 
 홈페이지 구축을 위해 애써 주신 전해정 지도교수님과 이숙연 박사님께 깊은 감사를 드리며, 여러분의 가정에 건강과 행복이 가득하시길 기원합니다.`}};
 function letterData(key){const p=S.pages[key]||{};const d=LETTER_DEFAULTS[key];
-  if(!d)return p;if(p.body&&(p.updated_at||"")>d.since)return Object.assign({},d,p,{date:"",quote:""});return d}
+  if(!d)return p;if(p.body&&(p.updated_at||"")>d.since)return Object.assign({},d,p,{date:""});return d}
 function richBody(t){
   return t.trim().split(/\n\s*\n/).map((para,i)=>{
     const lines=para.split("\n");
