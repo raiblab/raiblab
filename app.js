@@ -142,12 +142,47 @@ function renderHome(){
     return `<div class="panel${HB.length%2&&i===HB.length-1?" wide":""}"><h3>${BOARDS[b].name}<a href="#${b}">전체 보기 →</a></h3>${loadingOr(items)}</div>`;
   }).join("");
 }
+/* 기본 인사말 — DB에 이보다 나중에 저장한 글이 있으면 그 글을 씁니다 */
+const LETTER_DEFAULTS={chair:{since:"2026-10-28T03:00:00Z",name:"손갑주",role:"레이브랩 회장",aff:"레이브랩 RAIB Lab",
+  photo:"images/chair-son.jpg",pdf:"files/raiblab-chair-greeting.pdf",date:"2026. 10. 27.",
+  quote:"노하우와 지식자산을 널리 공유하고 집단 지성을 형성하는 열린 학술공간이 될 것입니다.",
+  body:`안녕하십니까?
+부동산 시장의 미래를 선도하는 지식과 도전의 공간에 오신 것을 환영합니다.
+
+레이브랩(연구실)을 이끌고 있는 회장 손갑주입니다. 우리 연구실의 학문적 성과를 축적하고, 국내의 연구자 및 실무 전문가들과 깊이 있게 소통할 공식 홈페이지 개설을 진심으로 축하합니다.
+
+최근의 부동산 시장은 거시경제의 변동성, 인구 구조의 변화, 그리고 디지털 기술의 급격한 발전이 맞물리며 과거와는 전혀 다른 새로운 패러다임을 맞이하고 있습니다. 이러한 대전환의 시기일수록 현상을 정확히 진단하고 미래를 예측하는 학술적 연구의 역할이 그 어느 때보다 중요합니다.
+
+우리 레이브랩(연구실)은 설립 이후 부동산 시장분석, 정책제안, 금융 및 자산관리 등 다방면에서 깊이 있는 연구를 수행하며 학문적 역량을 다져 왔습니다. 이 홈페이지는 우리 연구실에서 박사학위를 받은 분들의 노하우와 지식자산을 널리 공유하고 집단 지성을 형성하는 열린 학술공간이 될 것입니다.
+
+- 최신 연구 동향 및 논문 공유 : 연구실에서 진행되는 프로젝트, 박사학위 논문, 학술대회 발표 자료를 신속하게 공유하겠습니다.
+- 미래 박사학위 인재 양성의 요람 : 연구실 회원의 활동과 성장 과정을 기록하며, 차세대 부동산 전문가를 길러내는 소통의 장으로 운영하겠습니다.
+
+이 공간이 여러분의 학문적 탐구와 실무적 통찰력을 넓히고, 박사학위 논문에 조금이나마 보탬이 되길 기원합니다.
+
+홈페이지 구축을 위해 애써 주신 전해정 지도교수님과 이숙연 박사님께 깊은 감사를 드리며, 여러분의 가정에 건강과 행복이 가득하시길 기원합니다.`}};
+function letterData(key){const p=S.pages[key]||{};const d=LETTER_DEFAULTS[key];
+  if(!d)return p;if(p.body&&(p.updated_at||"")>d.since)return Object.assign({},d,p,{date:"",quote:""});return d}
+function richBody(t){
+  return t.trim().split(/\n\s*\n/).map((para,i)=>{
+    const lines=para.split("\n");
+    if(lines.every(l=>/^\s*-\s/.test(l)))return lines.map(l=>{const x=l.replace(/^\s*-\s*/,"");const k=x.indexOf(" : ");
+      return `<p class="item">- ${k>0?`<b>${esc(x.slice(0,k))}</b> : ${esc(x.slice(k+3))}`:esc(x)}</p>`}).join("");
+    return `<p${i===0?' class="lead"':""}>${lines.map(esc).join("<br>")}</p>`}).join("")}
 function renderLetter(key,title,role,defName,aff){
-  const p=S.pages[key]||{};const el=$("#v-"+key);
-  const body=p.body?esc(p.body):`<span class="empty">${S.loaded?"아직 인사말이 등록되지 않았습니다."+(S.canEdit?" 오른쪽 위 ‘인사말 편집’을 눌러 작성해 주세요.":""):"불러오는 중…"}</span>`;
+  const p=letterData(key);const el=$("#v-"+key);
+  const empty=`<span class="empty">${S.loaded?"아직 인사말이 등록되지 않았습니다."+(S.canEdit?" 오른쪽 위 ‘인사말 편집’을 눌러 작성해 주세요.":""):"불러오는 중…"}</span>`;
+  const R=role===p.role||!p.role?role:p.role;
+  if(p.photo){
+    el.innerHTML=`<div class="sec-h"><div><h2>${title}</h2></div><div class="toolbar">${p.pdf?`<a class="btn ghost" href="${p.pdf}" target="_blank" rel="noopener">PDF로 보기</a>`:""}${S.canEdit?`<button class="btn ghost" id="edit-${key}">인사말 편집</button>`:""}</div></div>
+  <article class="letter rich"><aside><img class="lphoto" src="${p.photo}" alt="${esc(R)} ${esc(p.name||"")}"><div class="cap"><div class="role">${esc(R)}</div><div class="nm">${esc(p.name||defName||"—")}</div><div class="aff">${esc(p.aff||aff)}</div></div>${p.quote?`<blockquote>${esc(p.quote)}</blockquote>`:""}</aside>
+  <div class="body">${p.heading?`<h3>${esc(p.heading)}</h3>`:""}${p.body?richBody(p.body):empty}${p.body&&p.name?`<div class="sign">${p.date?`<time>${esc(p.date)}</time>`:""}<span>${esc(R)} <b>${esc(p.name)}</b> 드림</span></div>`:""}</div></article>`;
+  }else{
+  const body=p.body?esc(p.body):empty;
   el.innerHTML=`<div class="sec-h"><div><h2>${title}</h2></div>${S.canEdit?`<button class="btn ghost" id="edit-${key}">인사말 편집</button>`:""}</div>
   <article class="letter"><aside><div class="role">${esc(p.role||role)}</div><div class="nm">${esc(p.name||defName||"—")}</div><div class="aff">${esc(p.aff||aff).replace("부동산학 박사","부동산학<br>박사")}</div></aside>
   <div class="body">${p.heading?`<h3>${esc(p.heading)}</h3>`:""}${body}${p.body&&p.name?`<div class="sign">${esc(p.aff||aff)} ${/^[\x00-\x7F]*$/.test(p.role||role)?"":esc(p.role||role)+" "}${esc(p.name)}</div>`:""}</div></article>`;
+  }
   const b=$("#edit-"+key);b&&(b.onclick=()=>editLetter(key,title,role,defName,aff));
 }
 const ROLES=["회장","부회장","총무","감사","이사"];
@@ -400,7 +435,7 @@ function editPost(b,p){
 
 /* ---------- 인사말·임원 (관리자) ---------- */
 function editLetter(key,title,role,defName,aff){
-  const p=S.pages[key]||{};
+  const p=letterData(key);
   const m=modal(`<h2>${title} 편집</h2><form class="form" id="lf">
     <div class="row2"><label for="l-name">성명<input id="l-name" name="name" value="${esc(p.name||defName)}"></label><label for="l-role">직함<input id="l-role" name="role" value="${esc(p.role||role)}"></label></div>
     <label for="l-aff">소속<input id="l-aff" name="aff" value="${esc(p.aff||aff)}"></label>

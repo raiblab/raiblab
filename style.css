@@ -248,7 +248,7 @@ footer .wrap{display:flex;justify-content:space-between;align-items:center;gap:2
 /* 하위 메뉴와 겹치는 인사말 제목 숨김(편집 버튼은 그대로) */
 #v-greeting .sec-h h2,#v-chair .sec-h h2{display:none}
 #v-greeting .sec-h,#v-chair .sec-h{justify-content:flex-end;margin-bottom:8px}
-#v-greeting .sec-h:not(:has(button)),#v-chair .sec-h:not(:has(button)){display:none}
+#v-greeting .sec-h:not(:has(button,a.btn)),#v-chair .sec-h:not(:has(button,a.btn)){display:none}
 @media (max-width:440px){nav.tabs{gap:16px}nav.tabs a{font-size:14px}}
 
 /* ---------- 표지(첫 화면): 위 메뉴 + 가운데 제목·소개·버튼 ---------- */
@@ -333,3 +333,31 @@ td.au{white-space:nowrap}
 .kind.k-cf{background:var(--cf-bg);color:var(--cf-fg);font-weight:600}
 .kind.k-pj{background:var(--pj-bg);color:var(--pj-fg);font-weight:600}
 .kind.k-bk{background:var(--bk-bg);color:var(--bk-fg);font-weight:600}
+
+/* 회장 인사말 — 사진·리드 문단·항목·서명 (2026-10-28) */
+a.btn{text-decoration:none;display:inline-block}
+.letter.rich{grid-template-columns:230px minmax(0,1fr);gap:48px}
+.letter.rich aside{border-right:0;padding-right:0}
+.letter.rich .lphoto{display:block;width:100%;aspect-ratio:4/5;object-fit:cover;object-position:center 20%;border-radius:6px;box-shadow:0 8px 22px rgba(18,48,90,.14)}
+.letter.rich .cap{margin-top:18px;padding-left:12px;border-left:2px solid var(--gold)}
+.letter.rich .cap .nm{letter-spacing:.2em;margin-top:2px}
+.letter.rich .cap .aff{margin-top:2px}
+.letter.rich blockquote{margin:30px 0 0;word-break:keep-all;font-family:var(--f-display);font-size:16.5px;line-height:1.75;color:var(--navy-2)}
+.letter.rich blockquote::before{content:"“";display:block;font-family:Georgia,serif;font-size:44px;line-height:.6;color:var(--gold);margin-bottom:8px}
+.letter.rich .body{white-space:normal;word-break:keep-all}
+.letter.rich .body p{margin:0 0 1.05em}
+.letter.rich .body p.lead{font-family:var(--f-display);font-size:21px;line-height:1.6;font-weight:700;color:var(--navy-2);margin-bottom:1.2em}
+.letter.rich .body p.item{padding-left:1.1em;text-indent:-.7em;margin-bottom:.45em}
+.letter.rich .body p.item+p:not(.item){margin-top:1.1em}
+.letter.rich .body p.item b{color:var(--navy-2)}
+.letter.rich .sign{margin-top:36px;text-align:right;display:grid;gap:6px;justify-items:end}
+.letter.rich .sign time{font-family:var(--f-mono);font-size:13px;color:var(--muted);letter-spacing:.06em}
+.letter.rich .sign span{font-family:var(--f-display);font-size:17px}
+.letter.rich .sign b{font-size:21px;letter-spacing:.25em;margin-left:6px}
+@media (max-width:760px){
+  .letter.rich{grid-template-columns:1fr;gap:24px}
+  .letter.rich aside{display:grid;grid-template-columns:120px 1fr;gap:16px;align-items:end}
+  .letter.rich .cap{margin-top:0}
+  .letter.rich blockquote{display:none}
+  .letter.rich .body p.lead{font-size:18.5px}
+}
