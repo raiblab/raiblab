@@ -144,7 +144,7 @@ function renderHome(){
 }
 /* 기본 인사말 — DB에 이보다 나중에 저장한 글이 있으면 그 글을 씁니다 */
 const PROF_SCHOLAR="https://scholar.google.com/citations?hl=ko&user=MlYd81sAAAAJ";
-const LETTER_PAGES={greeting:{img:"files/raiblab-professor-greeting.jpg?v=2",pdf:"files/raiblab-professor-greeting.pdf?v=2",alt:"교수 인사말 — 전해정 교수",scholar:PROF_SCHOLAR,
+const LETTER_PAGES={greeting:{img:"files/raiblab-professor-greeting.jpg?v=2",alt:"교수 인사말 — 전해정 교수",scholar:PROF_SCHOLAR,
     links:[{href:PROF_SCHOLAR,box:[9.52,86.31,37.01,5.57],label:"전해정 교수 Google Scholar"}]},
   chair:{img:"files/raiblab-chair-greeting.jpg?v=1",pdf:"files/raiblab-chair-greeting.pdf?v=1",alt:"회장 인사말 — 손갑주 회장"}};
 function letterPage(key){const p=S.pages[key]||{};const d=LETTER_PAGES[key]||{};
