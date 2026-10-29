@@ -116,8 +116,8 @@ function sortKey(p){return p.date||p.createdAt||""}
 function render(){
   const sg=$("#signin");if(sg)sg.hidden=!!sb;
   renderWho();renderHome();
-  if(current==="greeting")renderLetter("greeting","교수님 인사말","Lab Director","전해정 교수","상명대학교 일반대학원 부동산학 박사 연구실");
-  if(current==="chair")renderLetter("chair","회장 인사말","레이브랩 회장","","레이브랩 RAIB Lab");
+  if(current==="greeting")renderLetter("greeting","교수님 인사말");
+  if(current==="chair")renderLetter("chair","회장 인사말");
   if(current==="officers"){renderOfficers();renderMembers()}
   if(BOARDS[current])renderBoard(current);
 }
@@ -143,47 +143,15 @@ function renderHome(){
   }).join("");
 }
 /* 기본 인사말 — DB에 이보다 나중에 저장한 글이 있으면 그 글을 씁니다 */
-const LETTER_DEFAULTS={chair:{since:"2026-10-28T03:00:00Z",name:"손갑주",role:"레이브랩 회장",aff:"레이브랩 RAIB Lab",
-  photo:"images/chair-son.jpg",pdf:"files/raiblab-chair-greeting.pdf",date:"2026. 10. 27.",
-  quote:"노하우와 지식자산을 널리 공유하고 집단 지성을 형성하는 열린 학술공간이 될 것입니다.",
-  body:`안녕하십니까?
-부동산 시장의 미래를 선도하는 지식과 도전의 공간에 오신 것을 환영합니다.
-
-레이브랩(연구실)을 이끌고 있는 회장 손갑주입니다. 우리 연구실의 학문적 성과를 축적하고, 국내의 연구자 및 실무 전문가들과 깊이 있게 소통할 공식 홈페이지 개설을 진심으로 축하합니다.
-
-최근의 부동산 시장은 거시경제의 변동성, 인구 구조의 변화, 그리고 디지털 기술의 급격한 발전이 맞물리며 과거와는 전혀 다른 새로운 패러다임을 맞이하고 있습니다. 이러한 대전환의 시기일수록 현상을 정확히 진단하고 미래를 예측하는 학술적 연구의 역할이 그 어느 때보다 중요합니다.
-
-우리 레이브랩(연구실)은 설립 이후 부동산 시장분석, 정책제안, 금융 및 자산관리 등 다방면에서 깊이 있는 연구를 수행하며 학문적 역량을 다져 왔습니다. 이 홈페이지는 우리 연구실에서 박사학위를 받은 분들의 노하우와 지식자산을 널리 공유하고 집단 지성을 형성하는 열린 학술공간이 될 것입니다.
-
-- 최신 연구 동향 및 논문 공유 : 연구실에서 진행되는 프로젝트, 박사학위 논문, 학술대회 발표 자료를 신속하게 공유하겠습니다.
-- 미래 박사학위 인재 양성의 요람 : 연구실 회원의 활동과 성장 과정을 기록하며, 차세대 부동산 전문가를 길러내는 소통의 장으로 운영하겠습니다.
-
-이 공간이 여러분의 학문적 탐구와 실무적 통찰력을 넓히고, 박사학위 논문에 조금이나마 보탬이 되길 기원합니다.
-
-홈페이지 구축을 위해 애써 주신 전해정 지도교수님과 이숙연 박사님께 깊은 감사를 드리며, 여러분의 가정에 건강과 행복이 가득하시길 기원합니다.`}};
-function letterData(key){const p=S.pages[key]||{};const d=LETTER_DEFAULTS[key];
-  if(!d)return p;if(p.body&&(p.updated_at||"")>d.since)return Object.assign({},d,p,{date:""});return d}
-function richBody(t){
-  return t.trim().split(/\n\s*\n/).map((para,i)=>{
-    const lines=para.split("\n");
-    if(lines.every(l=>/^\s*-\s/.test(l)))return lines.map(l=>{const x=l.replace(/^\s*-\s*/,"");const k=x.indexOf(" : ");
-      return `<p class="item">- ${k>0?`<b>${esc(x.slice(0,k))}</b> : ${esc(x.slice(k+3))}`:esc(x)}</p>`}).join("");
-    return `<p${i===0?' class="lead"':""}>${lines.map(esc).join("<br>")}</p>`}).join("")}
-function renderLetter(key,title,role,defName,aff){
-  const p=letterData(key);const el=$("#v-"+key);
-  const empty=`<span class="empty">${S.loaded?"아직 인사말이 등록되지 않았습니다."+(S.canEdit?" 오른쪽 위 ‘인사말 편집’을 눌러 작성해 주세요.":""):"불러오는 중…"}</span>`;
-  const R=p.role==null?role:p.role;
-  if(p.photo){
-    el.innerHTML=`<div class="sec-h"><div><h2>${title}</h2></div><div class="toolbar">${p.pdf?`<a class="btn ghost" href="${p.pdf}" target="_blank" rel="noopener">PDF로 보기</a>`:""}${S.canEdit?`<button class="btn ghost" id="edit-${key}">인사말 편집</button>`:""}</div></div>
-  <article class="letter rich"><aside><img class="lphoto" src="${p.photo}" alt="${esc(R?R+" ":"")}${esc(p.name||"")}"><div class="cap">${R?`<div class="role">${esc(R)}</div>`:""}<div class="nm">${esc(p.name||defName||"—")}</div><div class="aff">${esc(p.aff||aff)}</div></div>${p.quote?`<blockquote>${esc(p.quote)}</blockquote>`:""}</aside>
-  <div class="body">${p.heading?`<h3>${esc(p.heading)}</h3>`:""}${p.body?richBody(p.body):empty}${p.body&&p.name?`<div class="sign">${p.date?`<time>${esc(p.date)}</time>`:""}<span>${R?esc(R)+" ":""}<b>${esc(p.name)}</b> 드림</span></div>`:""}</div></article>`;
-  }else{
-  const body=p.body?esc(p.body):empty;
-  el.innerHTML=`<div class="sec-h"><div><h2>${title}</h2></div>${S.canEdit?`<button class="btn ghost" id="edit-${key}">인사말 편집</button>`:""}</div>
-  <article class="letter"><aside>${R?`<div class="role">${esc(R)}</div>`:""}<div class="nm">${esc(p.name||defName||"—")}</div><div class="aff">${esc(p.aff||aff).replace("부동산학 박사","부동산학<br>박사")}</div></aside>
-  <div class="body">${p.heading?`<h3>${esc(p.heading)}</h3>`:""}${body}${p.body&&p.name?`<div class="sign">${esc(p.aff||aff)} ${!R||/^[\x00-\x7F]*$/.test(R)?"":esc(R)+" "}${esc(p.name)}</div>`:""}</div></article>`;
-  }
-  const b=$("#edit-"+key);b&&(b.onclick=()=>editLetter(key,title,role,defName,aff));
+const LETTER_PAGES={greeting:{img:"files/raiblab-professor-greeting.jpg?v=1",pdf:"files/raiblab-professor-greeting.pdf?v=1",alt:"교수 인사말 — 전해정 교수"},
+  chair:{img:"files/raiblab-chair-greeting.jpg?v=1",pdf:"files/raiblab-chair-greeting.pdf?v=1",alt:"회장 인사말 — 손갑주 회장"}};
+function letterPage(key){const p=S.pages[key]||{};const d=LETTER_PAGES[key]||{};
+  return p.page_img?{img:p.page_img,pdf:p.page_pdf||"",alt:d.alt||""}:d}
+function renderLetter(key,title){
+  const el=$("#v-"+key);const pg=letterPage(key);
+  el.innerHTML=`<div class="sec-h"><div><h2>${title}</h2></div><div class="toolbar">${pg.pdf?`<a class="btn ghost" href="${esc(pg.pdf)}" target="_blank" rel="noopener">PDF로 보기</a>`:""}${S.canEdit?`<button class="btn ghost" id="edit-${key}">인사말 바꾸기</button>`:""}</div></div>
+  ${pg.img?`<figure class="letter-page"><a href="${esc(pg.img)}" target="_blank" rel="noopener"><img src="${esc(pg.img)}" alt="${esc(pg.alt||title)}"></a></figure>`:`<p class="empty">아직 인사말이 등록되지 않았습니다.</p>`}`;
+  const b=$("#edit-"+key);b&&(b.onclick=()=>editLetter(key,title));
 }
 const ROLES=["회장","부회장","총무","감사","이사"];
 const SECTIONS=[["임원","off-box","역대 임원","기수별 회장단과 임원 명단입니다."],["골프 임원","golf-off-box","골프 임원","골프 동호회 임원 명단입니다."]];
@@ -434,18 +402,22 @@ function editPost(b,p){
 }
 
 /* ---------- 인사말·임원 (관리자) ---------- */
-function editLetter(key,title,role,defName,aff){
-  const p=letterData(key);
-  const m=modal(`<h2>${title} 편집</h2><form class="form" id="lf">
-    <div class="row2"><label for="l-name">성명<input id="l-name" name="name" value="${esc(p.name||defName)}"></label><label for="l-role">직함<input id="l-role" name="role" value="${esc(p.role==null?role:p.role)}" placeholder="비워 두면 직함이 표시되지 않습니다"></label></div>
-    <label for="l-aff">소속<input id="l-aff" name="aff" value="${esc(p.aff||aff)}"></label>
-    <label for="l-heading">제목 (선택)<input id="l-heading" name="heading" value="${esc(p.heading||"")}"></label>
-    <label for="l-body">인사말 본문<textarea id="l-body" name="body" style="min-height:300px">${esc(p.body||"")}</textarea></label>
+function editLetter(key,title){
+  const m=modal(`<h2>${title} 바꾸기</h2><form class="form" id="lf">
+    <p class="hint">편집한 인사말 한 페이지를 그림 파일로 올리면 화면에 그대로 크게 보입니다. PDF도 함께 올리면 ‘PDF로 보기’ 단추가 생깁니다.</p>
+    <label for="l-img">인사말 그림 파일 (JPG·PNG)<input id="l-img" name="img" type="file" accept="image/jpeg,image/png,image/webp" required></label>
+    <label for="l-pdf">PDF 파일 (선택)<input id="l-pdf" name="pdf" type="file" accept="application/pdf"></label>
     <div class="err" id="lerr"></div>
-    <div class="actions"><button type="button" class="btn ghost" id="lc">취소</button><button class="btn">저장</button></div></form>`);
+    <div class="actions"><button type="button" class="btn ghost" id="lc">취소</button><button class="btn" id="ls">올리기</button></div></form>`);
   m.querySelector("#lc").onclick=close;
-  m.querySelector("#lf").onsubmit=async e=>{e.preventDefault();const fd=new FormData(e.target);const d={key};["name","role","aff","heading","body"].forEach(k=>d[k]=(fd.get(k)||"").toString().trim());d.updated_at=new Date().toISOString();
-    try{must(await sb.from("pages").upsert(d));close();toast("저장했습니다");loadAll()}catch(err){$("#lerr").textContent="저장하지 못했습니다. "+errMsg(err)}};
+  m.querySelector("#lf").onsubmit=async e=>{e.preventDefault();const img=$("#l-img").files[0],pdf=$("#l-pdf").files[0];if(!img)return;
+    const btn=$("#ls");btn.disabled=true;btn.textContent="올리는 중…";
+    try{const up=async file=>{const ext=file.type==="application/pdf"?"pdf":(file.type.split("/")[1]||"jpg").replace("jpeg","jpg");
+        const path=`${S.myId}/${key}-page-${Date.now()}.${ext}`;must(await sb.storage.from(BUCKET).upload(path,file,{contentType:file.type,upsert:false}));
+        return sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl};
+      const d={key,page_img:await up(img),page_pdf:pdf?await up(pdf):null,updated_at:new Date().toISOString()};
+      must(await sb.from("pages").upsert(d));close();toast("인사말을 바꿨습니다");loadAll()}
+    catch(err){btn.disabled=false;btn.textContent="올리기";$("#lerr").textContent="올리지 못했습니다. "+errMsg(err)}};
 }
 function editOfficer(o){
   o=o||{};
