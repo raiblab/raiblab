@@ -372,3 +372,13 @@ a.btn{text-decoration:none;display:inline-block}
 @media (max-width:560px){.intro-h{font-size:15.5px}}
 .gs-link{display:inline-block;font-size:11px;font-weight:600;color:#1a56c4;border:1px solid #b9cdf3;border-radius:4px;padding:0 5px;margin-left:4px;text-decoration:none;vertical-align:1px}
 .gs-link:hover{background:#eef3fd}
+
+/* 연구실적: 휴대폰에서는 한 줄에 한 편씩 — 제목은 보이는 만큼만, 누르면 자세히 */
+@media (max-width:640px){
+  .rs{table-layout:fixed;width:100%;min-width:0}
+  .rs thead{display:none}
+  .rs th:nth-child(n+3),.rs td:nth-child(n+3){display:none}
+  .rs td:first-child{width:76px;padding-right:6px}
+  .rs td:first-child .kind{font-size:11px;padding:2px 6px;white-space:nowrap}
+  .rs td.rt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+}
