@@ -45,7 +45,7 @@ const canWrite=()=>!!myMember()||S.canEdit;
 const toPost=r=>({id:r.id,board:r.board,title:r.title||"",body:r.body||"",date:r.date||"",place:r.place||"",kind:r.kind||"",year:r.year||"",authors:r.authors||"",venue:r.venue||"",source:r.source||"",link:r.link||"",authorName:r.author_name||"",authorId:r.author_id||"",photos:Array.isArray(r.photos)?r.photos:[],locked:!!r.locked,createdAt:r.created_at});
 const fromPost=d=>({title:d.title,body:nz(d.body),date:nz(d.date),place:nz(d.place),kind:nz(d.kind),year:num(d.year),authors:nz(d.authors),venue:nz(d.venue),source:nz(d.source),link:nz(d.link),author_name:nz(d.authorName),photos:d.photos||[]});
 const toOfficer=r=>({id:r.id,section:r.section||"임원",term:r.term||"",period:r.period||"",role:r.role||"",name:r.name||"",note:r.note||"",termOrder:r.term_order});
-const toMember=r=>({id:r.id,userId:r.user_id||"",name:r.name||"",phone:r.phone||"",gen:r.gen||"",course:r.course||"",year:r.year||"",email:r.email||"",org:r.org||"",field:r.field||"",joinedAt:r.joined_at});
+const toMember=r=>({id:r.id,userId:r.user_id||"",name:r.name||"",phone:r.phone||"",gen:r.gen||"",course:r.course||"",year:r.year||"",email:r.email||"",org:r.org||"",field:r.field||"",scholar:r.scholar||"",joinedAt:r.joined_at});
 
 async function loadAll(){
   if(!sb){S.loaded=true;render();return}
@@ -60,7 +60,7 @@ async function loadAll(){
   S.posts=(p.data||[]).map(toPost);
   S.pages={};(pg.data||[]).forEach(r=>S.pages[r.key]=r);
   S.officers=(o.data||[]).map(toOfficer);
-  S.members=(m.data||[]).map(toMember);
+  S.members=(m.data||[]).map(toMember);S.hasScholar=!!(m.data||[]).length&&"scholar" in m.data[0];
   S.admins=[];
   S.users=[];S.usersOk=false;
   if(S.canEdit){const [a,u,l]=await Promise.all([sb.from("admins").select("user_id"),sb.rpc("admin_list_users"),sb.from("post_locks").select("post_id,body,photos")]);
@@ -143,14 +143,16 @@ function renderHome(){
   }).join("");
 }
 /* 기본 인사말 — DB에 이보다 나중에 저장한 글이 있으면 그 글을 씁니다 */
-const LETTER_PAGES={greeting:{img:"files/raiblab-professor-greeting.jpg?v=1",pdf:"files/raiblab-professor-greeting.pdf?v=1",alt:"교수 인사말 — 전해정 교수"},
+const PROF_SCHOLAR="https://scholar.google.com/citations?hl=ko&user=MlYd81sAAAAJ";
+const LETTER_PAGES={greeting:{img:"files/raiblab-professor-greeting.jpg?v=2",pdf:"files/raiblab-professor-greeting.pdf?v=2",alt:"교수 인사말 — 전해정 교수",scholar:PROF_SCHOLAR,
+    links:[{href:PROF_SCHOLAR,box:[9.52,86.31,37.01,5.57],label:"전해정 교수 Google Scholar"}]},
   chair:{img:"files/raiblab-chair-greeting.jpg?v=1",pdf:"files/raiblab-chair-greeting.pdf?v=1",alt:"회장 인사말 — 손갑주 회장"}};
 function letterPage(key){const p=S.pages[key]||{};const d=LETTER_PAGES[key]||{};
-  return p.page_img?{img:p.page_img,pdf:p.page_pdf||"",alt:d.alt||""}:d}
+  return p.page_img?{img:p.page_img,pdf:p.page_pdf||"",alt:d.alt||"",scholar:d.scholar}:d}
 function renderLetter(key,title){
   const el=$("#v-"+key);const pg=letterPage(key);
-  el.innerHTML=`<div class="sec-h"><div><h2>${title}</h2></div><div class="toolbar">${pg.pdf?`<a class="btn ghost" href="${esc(pg.pdf)}" target="_blank" rel="noopener">PDF로 보기</a>`:""}${S.canEdit?`<button class="btn ghost" id="edit-${key}">인사말 바꾸기</button>`:""}</div></div>
-  ${pg.img?`<figure class="letter-page"><a href="${esc(pg.img)}" target="_blank" rel="noopener"><img src="${esc(pg.img)}" alt="${esc(pg.alt||title)}"></a></figure>`:`<p class="empty">아직 인사말이 등록되지 않았습니다.</p>`}`;
+  el.innerHTML=`<div class="sec-h"><div><h2>${title}</h2></div><div class="toolbar">${pg.scholar?`<a class="btn ghost" href="${esc(pg.scholar)}" target="_blank" rel="noopener">Google Scholar</a>`:""}${pg.pdf?`<a class="btn ghost" href="${esc(pg.pdf)}" target="_blank" rel="noopener">PDF로 보기</a>`:""}${S.canEdit?`<button class="btn ghost" id="edit-${key}">인사말 바꾸기</button>`:""}</div></div>
+  ${pg.img?`<figure class="letter-page"><img src="${esc(pg.img)}" alt="${esc(pg.alt||title)}">${(pg.links||[]).map(l=>`<a class="hot" href="${esc(l.href)}" target="_blank" rel="noopener" aria-label="${esc(l.label)}" style="left:${l.box[0]}%;top:${l.box[1]}%;width:${l.box[2]}%;height:${l.box[3]}%"></a>`).join("")}</figure>`:`<p class="empty">아직 인사말이 등록되지 않았습니다.</p>`}`;
   const b=$("#edit-"+key);b&&(b.onclick=()=>editLetter(key,title));
 }
 const ROLES=["회장","부회장","총무","감사","이사"];
@@ -242,9 +244,11 @@ function memberFields(m){return `
     <div class="row2"><label for="m-gen">기수 (숫자만, 예: 3)<input id="m-gen" name="gen" type="number" min="1" max="200" required value="${esc(m.gen)}"></label><label for="m-year">입학 연도 (선택)<input id="m-year" name="year" type="number" min="1990" max="2100" value="${esc(m.year)}"></label></div>
     <label for="m-email">명단에 표시할 이메일 (선택)<input id="m-email" name="email" type="email" value="${esc(m.email)}"></label>
     <label for="m-org">직장·직위 (선택)<input id="m-org" name="org" placeholder="예: ○○공사 차장" value="${esc(m.org)}"></label>
-    <label for="m-field">연구분야<input id="m-field" name="field" placeholder="예: 전세시장, 머신러닝" value="${esc(m.field)}"></label>`}
+    <label for="m-field">연구분야<input id="m-field" name="field" placeholder="예: 전세시장, 머신러닝" value="${esc(m.field)}"></label>${S.hasScholar?`
+    <label for="m-scholar">Google Scholar 주소 (선택)<input id="m-scholar" name="scholar" type="url" placeholder="https://scholar.google.com/citations?user=…" value="${esc(m.scholar||"")}"></label>`:""}`}
 function readMember(fd){const d={};["name","gen","course","year","email","org","field"].forEach(k=>d[k]=(fd.get(k)||"").toString().trim());
-  return {name:d.name,gen:num(d.gen),course:d.course,year:num(d.year),email:nz(d.email),org:nz(d.org),field:nz(d.field)}}
+  const r={name:d.name,gen:num(d.gen),course:d.course,year:num(d.year),email:nz(d.email),org:nz(d.org),field:nz(d.field)};
+  if(S.hasScholar){const u=(fd.get("scholar")||"").toString().trim();r.scholar=/^https?:\/\//.test(u)?u:null}return r}
 function signupModal(){
   if(!sb){toast("홈페이지 설정(Supabase 연결)이 아직 끝나지 않았습니다");return}
   if(S.session){editMember({},true);return}
@@ -265,7 +269,7 @@ function signupModal(){
       else{close();modal(`<h2>인증 메일을 보냈습니다</h2><div class="content">${esc(email)}로 보낸 메일의 링크를 누른 뒤 로그인하시면 회원 명단에 자동으로 올라갑니다.</div><div class="actions"><button class="btn" onclick="document.getElementById('modal-root').innerHTML=''">확인</button></div>`)}
     }catch(err){b.disabled=false;$("#suerr").textContent=errMsg(err)}};
 }
-async function insertSelf(prof){await save(r=>sb.from("members").insert(r),Object.assign({user_id:S.myId},prof),["phone"])}
+async function insertSelf(prof){await save(r=>sb.from("members").insert(r),Object.assign({user_id:S.myId},prof),["phone","scholar"])}
 /* 이메일 인증 후 처음 로그인하면 가입 때 적은 정보로 명단에 자동 등록 */
 async function ensureMemberRow(session){
   const pend=session&&session.user&&session.user.user_metadata&&session.user.user_metadata.pending_member;
@@ -457,7 +461,7 @@ function renderMembers(){
       :`<td style="white-space:nowrap;color:var(--muted)">${m.userId?(S.usersOk?"—":"…"):"계정 없음"}</td><td class="num">${fmt(m.joinedAt)}</td><td class="num">—</td>`};
   const inner=!S.loaded?`<div class="panel"><div class="empty">불러오는 중…</div></div>`
     :!list.length?`<div class="panel"><div class="empty">${q||fc?"검색 결과가 없습니다.":"아직 등록된 회원이 없습니다."}</div></div>`
-    :`<div class="tablewrap"><table><thead><tr><th>번호</th><th>기수</th><th>성명</th><th>과정</th><th>입학</th><th>직장·직위</th><th>연구분야</th><th>이메일</th>${ah}<th></th></tr></thead><tbody>${list.map((m,i)=>`<tr><td class="num">${i+1}</td><td class="num" style="color:var(--ink);font-weight:600">${m.gen?esc(m.gen)+"기":"—"}</td><td style="white-space:nowrap;font-weight:600">${esc(m.name)}${m.userId&&m.userId===S.myId?' <span class="kind">나</span>':""}${adm&&m.userId&&S.admins.includes(m.userId)?' <span class="adm">관리자</span>':""}</td><td><span class="kind ${courseClass(m.course)}">${esc(courseLabel(m.course))}</span></td><td class="num">${esc(m.year)}</td><td style="white-space:nowrap">${esc(m.org)}</td><td style="white-space:nowrap">${esc(m.field)}</td><td style="white-space:nowrap">${esc(m.email)}</td>${ac(m)}<td class="num" style="white-space:nowrap">${(adm||(m.userId&&m.userId===S.myId))?`<button class="btn sm ghost" data-mem="${m.id}">수정</button>`:""}${adm&&m.userId!==S.myId?` <button class="btn sm danger" data-out="${m.id}">탈퇴</button>`:""}</td></tr>`).join("")}</tbody></table></div>`;
+    :`<div class="tablewrap"><table><thead><tr><th>번호</th><th>기수</th><th>성명</th><th>과정</th><th>입학</th><th>직장·직위</th><th>연구분야</th><th>이메일</th>${ah}<th></th></tr></thead><tbody>${list.map((m,i)=>`<tr><td class="num">${i+1}</td><td class="num" style="color:var(--ink);font-weight:600">${m.gen?esc(m.gen)+"기":"—"}</td><td style="white-space:nowrap;font-weight:600">${esc(m.name)}${m.scholar?` <a class="gs-link" href="${esc(m.scholar)}" target="_blank" rel="noopener" title="${esc(m.name)} Google Scholar">Scholar</a>`:""}${m.userId&&m.userId===S.myId?' <span class="kind">나</span>':""}${adm&&m.userId&&S.admins.includes(m.userId)?' <span class="adm">관리자</span>':""}</td><td><span class="kind ${courseClass(m.course)}">${esc(courseLabel(m.course))}</span></td><td class="num">${esc(m.year)}</td><td style="white-space:nowrap">${esc(m.org)}</td><td style="white-space:nowrap">${esc(m.field)}</td><td style="white-space:nowrap">${esc(m.email)}</td>${ac(m)}<td class="num" style="white-space:nowrap">${(adm||(m.userId&&m.userId===S.myId))?`<button class="btn sm ghost" data-mem="${m.id}">수정</button>`:""}${adm&&m.userId!==S.myId?` <button class="btn sm danger" data-out="${m.id}">탈퇴</button>`:""}</td></tr>`).join("")}</tbody></table></div>`;
   /* 관리자: 가입은 했지만 명단에 없는 계정 */
   let orphan="";
   if(adm&&S.usersOk){const has=new Set(S.members.map(m=>m.userId).filter(Boolean));
@@ -489,7 +493,7 @@ function withdraw(label,userId,memberId){
     }catch(e){b.disabled=false;$("#werr").textContent="처리하지 못했습니다. "+errMsg(e)}};
 }
 function editMember(m,self){
-  m=Object.assign({name:"",gen:"",course:"",year:"",phone:"",email:"",org:"",field:""},m||{});const isNew=!m.id;
+  m=Object.assign({name:"",gen:"",course:"",year:"",phone:"",email:"",org:"",field:"",scholar:""},m||{});const isNew=!m.id;
   const title=self?(isNew?"명단에 내 정보 등록":"내 회원정보 수정"):(isNew?"회원 추가":"회원 정보 수정");
   if(self&&isNew&&!m.email)m.email=S.myEmail||"";
   const md=modal(`<h2>${title}</h2><form class="form" id="mf">
@@ -504,8 +508,8 @@ function editMember(m,self){
   md.querySelector("#mf").onsubmit=async e=>{e.preventDefault();const d=readMember(new FormData(e.target));const btn=$("#ms");btn.disabled=true;
     try{
       if(isNew&&self)await insertSelf(d);
-      else if(isNew)await save(r=>sb.from("members").insert(r),d,["phone"]);
-      else{d.updated_at=new Date().toISOString();await save(r=>sb.from("members").update(r).eq("id",m.id),d,["phone"])}
+      else if(isNew)await save(r=>sb.from("members").insert(r),d,["phone","scholar"]);
+      else{d.updated_at=new Date().toISOString();await save(r=>sb.from("members").update(r).eq("id",m.id),d,["phone","scholar"])}
       if(!self&&!isNew&&m.userId){const want=!!(e.target.querySelector("#m-admin")||{}).checked,has=S.admins.includes(m.userId);
         if(want&&!has)must(await sb.from("admins").insert({user_id:m.userId}));
         if(!want&&has)must(await sb.from("admins").delete().eq("user_id",m.userId))}
