@@ -53,7 +53,7 @@ async function loadAll(){
     sb.from("posts").select("*").order("created_at",{ascending:false}).limit(1000),
     sb.from("pages").select("*"),
     sb.from("officers").select("*"),
-    S.session?sb.from("members").select("*"):Promise.resolve({data:[]}),
+    S.session?sb.from("members").select("*"):sb.from("members_public").select("*"),
     sb.from("popups").select("*").order("created_at",{ascending:false})
   ]);
   S.popupsOk=!pu.error;S.popups=pu.error?[]:(pu.data||[]);
@@ -443,8 +443,6 @@ function editOfficer(o){
 /* ---------- 회원 명단 ---------- */
 function renderMembers(){
   const el=$("#v-members");
-  if(!S.session){el.innerHTML=`<div class="sec-h"><div><h2>회원</h2><p>레이브랩 회원 명단입니다.</p></div><div class="toolbar"><button class="btn ghost" id="mm-login">로그인</button><button class="btn" id="mm-join">회원가입</button></div></div><div class="panel"><div class="empty">회원 명단은 로그인한 회원에게만 보입니다.</div></div>`;
-    $("#mm-login").onclick=loginModal;$("#mm-join").onclick=signupModal;return}
   const adm=S.canEdit;
   const q=(S.q.members||"").trim().toLowerCase();const fc=S.f.members||"";
   const keep=document.activeElement&&document.activeElement.id==="q-members";
@@ -452,7 +450,7 @@ function renderMembers(){
   const U={};S.users.forEach(u=>U[u.id]=u);
   const list=S.members.filter(m=>!fc||m.course===fc).filter(m=>!q||[m.name,m.course,m.year,m.org,m.field,m.email,m.gen?m.gen+"기":"",adm&&U[m.userId]?U[m.userId].email:""].join(" ").toLowerCase().includes(q))
     .sort((a,b)=>(Number(a.gen)||9999)-(Number(b.gen)||9999)||(COURSES.indexOf(a.course)+1||99)-(COURSES.indexOf(b.course)+1||99)||String(a.name).localeCompare(String(b.name),"ko"));
-  let btns=mineRow?`<button class="btn ghost" id="m-mine">내 회원정보 수정</button>`:`<button class="btn" id="m-join">명단에 내 정보 등록</button>`;
+  const pub=!S.session;let btns=pub?`<button class="btn ghost" id="mm-login">로그인</button><button class="btn" id="mm-join">회원가입</button>`:mineRow?`<button class="btn ghost" id="m-mine">내 회원정보 수정</button>`:`<button class="btn" id="m-join">명단에 내 정보 등록</button>`;
   if(adm)btns+=`<button class="btn ghost" id="m-add">회원 추가</button>`;
   const chips=`<div class="ftabs">${[""].concat(COURSES).map(c=>`<button type="button" data-mf="${esc(c)}"${c===fc?' aria-pressed="true"':""}>${c?esc(courseLabel(c)):"전체"} <small>${c?S.members.filter(m=>m.course===c).length:S.members.length}</small></button>`).join("")}</div>`;
   const ah=adm?"<th>로그인 계정</th><th>가입일</th><th>최근 접속</th>":"";
@@ -461,7 +459,7 @@ function renderMembers(){
       :`<td style="white-space:nowrap;color:var(--muted)">${m.userId?(S.usersOk?"—":"…"):"계정 없음"}</td><td class="num">${fmt(m.joinedAt)}</td><td class="num">—</td>`};
   const inner=!S.loaded?`<div class="panel"><div class="empty">불러오는 중…</div></div>`
     :!list.length?`<div class="panel"><div class="empty">${q||fc?"검색 결과가 없습니다.":"아직 등록된 회원이 없습니다."}</div></div>`
-    :`<div class="tablewrap"><table><thead><tr><th>번호</th><th>기수</th><th>성명</th><th>과정</th><th>입학</th><th>직장·직위</th><th>연구분야</th><th>이메일</th>${ah}<th></th></tr></thead><tbody>${list.map((m,i)=>`<tr><td class="num">${i+1}</td><td class="num" style="color:var(--ink);font-weight:600">${m.gen?esc(m.gen)+"기":"—"}</td><td style="white-space:nowrap;font-weight:600">${esc(m.name)}${m.scholar?` <a class="gs-link" href="${esc(m.scholar)}" target="_blank" rel="noopener" title="${esc(m.name)} Google Scholar">Scholar</a>`:""}${m.userId&&m.userId===S.myId?' <span class="kind">나</span>':""}${adm&&m.userId&&S.admins.includes(m.userId)?' <span class="adm">관리자</span>':""}</td><td><span class="kind ${courseClass(m.course)}">${esc(courseLabel(m.course))}</span></td><td class="num">${esc(m.year)}</td><td style="white-space:nowrap">${esc(m.org)}</td><td style="white-space:nowrap">${esc(m.field)}</td><td style="white-space:nowrap">${esc(m.email)}</td>${ac(m)}<td class="num" style="white-space:nowrap">${(adm||(m.userId&&m.userId===S.myId))?`<button class="btn sm ghost" data-mem="${m.id}">수정</button>`:""}${adm&&m.userId!==S.myId?` <button class="btn sm danger" data-out="${m.id}">탈퇴</button>`:""}</td></tr>`).join("")}</tbody></table></div>`;
+    :`<div class="tablewrap"><table><thead><tr><th>번호</th><th>기수</th><th>성명</th><th>과정</th><th>입학</th><th>직장·직위</th><th>연구분야</th>${pub?"":"<th>이메일</th>"}${ah}${pub?"":"<th></th>"}</tr></thead><tbody>${list.map((m,i)=>`<tr><td class="num">${i+1}</td><td class="num" style="color:var(--ink);font-weight:600">${m.gen?esc(m.gen)+"기":"—"}</td><td style="white-space:nowrap;font-weight:600">${esc(m.name)}${m.scholar?` <a class="gs-link" href="${esc(m.scholar)}" target="_blank" rel="noopener" title="${esc(m.name)} Google Scholar">Scholar</a>`:""}${m.userId&&m.userId===S.myId?' <span class="kind">나</span>':""}${adm&&m.userId&&S.admins.includes(m.userId)?' <span class="adm">관리자</span>':""}</td><td><span class="kind ${courseClass(m.course)}">${esc(courseLabel(m.course))}</span></td><td class="num">${esc(m.year)}</td><td style="white-space:nowrap">${esc(m.org)}</td><td style="white-space:nowrap">${esc(m.field)}</td>${pub?"":`<td style="white-space:nowrap">${esc(m.email)}</td>`}${ac(m)}${pub?"":`<td class="num" style="white-space:nowrap">${(adm||(m.userId&&m.userId===S.myId))?`<button class="btn sm ghost" data-mem="${m.id}">수정</button>`:""}${adm&&m.userId!==S.myId?` <button class="btn sm danger" data-out="${m.id}">탈퇴</button>`:""}</td>`}</tr>`).join("")}</tbody></table></div>`;
   /* 관리자: 가입은 했지만 명단에 없는 계정 */
   let orphan="";
   if(adm&&S.usersOk){const has=new Set(S.members.map(m=>m.userId).filter(Boolean));
@@ -472,6 +470,7 @@ function renderMembers(){
   const qi=$("#q-members");qi.oninput=()=>{S.q.members=qi.value;renderMembers()};
   if(keep){qi.focus();qi.setSelectionRange(qi.value.length,qi.value.length)}
   el.querySelectorAll("[data-mf]").forEach(x=>x.onclick=()=>{S.f.members=x.dataset.mf;renderMembers()});
+  const ml=$("#mm-login");ml&&(ml.onclick=loginModal);const mj=$("#mm-join");mj&&(mj.onclick=signupModal);
   const j=$("#m-join");j&&(j.onclick=()=>editMember({},true));
   const mi=$("#m-mine");mi&&(mi.onclick=()=>editMember(mineRow,true));
   const ad=$("#m-add");ad&&(ad.onclick=()=>editMember({},false));
