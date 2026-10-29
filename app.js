@@ -172,16 +172,16 @@ function richBody(t){
 function renderLetter(key,title,role,defName,aff){
   const p=letterData(key);const el=$("#v-"+key);
   const empty=`<span class="empty">${S.loaded?"아직 인사말이 등록되지 않았습니다."+(S.canEdit?" 오른쪽 위 ‘인사말 편집’을 눌러 작성해 주세요.":""):"불러오는 중…"}</span>`;
-  const R=role===p.role||!p.role?role:p.role;
+  const R=p.role==null?role:p.role;
   if(p.photo){
     el.innerHTML=`<div class="sec-h"><div><h2>${title}</h2></div><div class="toolbar">${p.pdf?`<a class="btn ghost" href="${p.pdf}" target="_blank" rel="noopener">PDF로 보기</a>`:""}${S.canEdit?`<button class="btn ghost" id="edit-${key}">인사말 편집</button>`:""}</div></div>
-  <article class="letter rich"><aside><img class="lphoto" src="${p.photo}" alt="${esc(R)} ${esc(p.name||"")}"><div class="cap"><div class="role">${esc(R)}</div><div class="nm">${esc(p.name||defName||"—")}</div><div class="aff">${esc(p.aff||aff)}</div></div>${p.quote?`<blockquote>${esc(p.quote)}</blockquote>`:""}</aside>
-  <div class="body">${p.heading?`<h3>${esc(p.heading)}</h3>`:""}${p.body?richBody(p.body):empty}${p.body&&p.name?`<div class="sign">${p.date?`<time>${esc(p.date)}</time>`:""}<span>${esc(R)} <b>${esc(p.name)}</b> 드림</span></div>`:""}</div></article>`;
+  <article class="letter rich"><aside><img class="lphoto" src="${p.photo}" alt="${esc(R?R+" ":"")}${esc(p.name||"")}"><div class="cap">${R?`<div class="role">${esc(R)}</div>`:""}<div class="nm">${esc(p.name||defName||"—")}</div><div class="aff">${esc(p.aff||aff)}</div></div>${p.quote?`<blockquote>${esc(p.quote)}</blockquote>`:""}</aside>
+  <div class="body">${p.heading?`<h3>${esc(p.heading)}</h3>`:""}${p.body?richBody(p.body):empty}${p.body&&p.name?`<div class="sign">${p.date?`<time>${esc(p.date)}</time>`:""}<span>${R?esc(R)+" ":""}<b>${esc(p.name)}</b> 드림</span></div>`:""}</div></article>`;
   }else{
   const body=p.body?esc(p.body):empty;
   el.innerHTML=`<div class="sec-h"><div><h2>${title}</h2></div>${S.canEdit?`<button class="btn ghost" id="edit-${key}">인사말 편집</button>`:""}</div>
-  <article class="letter"><aside><div class="role">${esc(p.role||role)}</div><div class="nm">${esc(p.name||defName||"—")}</div><div class="aff">${esc(p.aff||aff).replace("부동산학 박사","부동산학<br>박사")}</div></aside>
-  <div class="body">${p.heading?`<h3>${esc(p.heading)}</h3>`:""}${body}${p.body&&p.name?`<div class="sign">${esc(p.aff||aff)} ${/^[\x00-\x7F]*$/.test(p.role||role)?"":esc(p.role||role)+" "}${esc(p.name)}</div>`:""}</div></article>`;
+  <article class="letter"><aside>${R?`<div class="role">${esc(R)}</div>`:""}<div class="nm">${esc(p.name||defName||"—")}</div><div class="aff">${esc(p.aff||aff).replace("부동산학 박사","부동산학<br>박사")}</div></aside>
+  <div class="body">${p.heading?`<h3>${esc(p.heading)}</h3>`:""}${body}${p.body&&p.name?`<div class="sign">${esc(p.aff||aff)} ${!R||/^[\x00-\x7F]*$/.test(R)?"":esc(R)+" "}${esc(p.name)}</div>`:""}</div></article>`;
   }
   const b=$("#edit-"+key);b&&(b.onclick=()=>editLetter(key,title,role,defName,aff));
 }
@@ -437,7 +437,7 @@ function editPost(b,p){
 function editLetter(key,title,role,defName,aff){
   const p=letterData(key);
   const m=modal(`<h2>${title} 편집</h2><form class="form" id="lf">
-    <div class="row2"><label for="l-name">성명<input id="l-name" name="name" value="${esc(p.name||defName)}"></label><label for="l-role">직함<input id="l-role" name="role" value="${esc(p.role||role)}"></label></div>
+    <div class="row2"><label for="l-name">성명<input id="l-name" name="name" value="${esc(p.name||defName)}"></label><label for="l-role">직함<input id="l-role" name="role" value="${esc(p.role==null?role:p.role)}" placeholder="비워 두면 직함이 표시되지 않습니다"></label></div>
     <label for="l-aff">소속<input id="l-aff" name="aff" value="${esc(p.aff||aff)}"></label>
     <label for="l-heading">제목 (선택)<input id="l-heading" name="heading" value="${esc(p.heading||"")}"></label>
     <label for="l-body">인사말 본문<textarea id="l-body" name="body" style="min-height:300px">${esc(p.body||"")}</textarea></label>
