@@ -382,3 +382,10 @@ a.btn{text-decoration:none;display:inline-block}
   .rs td:first-child .kind{font-size:11px;padding:2px 6px;white-space:nowrap}
   .rs td.rt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 }
+
+/* 새 글 표시(빨간 점·N) */
+:root{--new:#e5383b}
+.newdot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--new);margin-left:6px;vertical-align:super;flex:none}
+#tabs a.has-new,.subnav a.has-new{position:relative}
+#tabs a.has-new::after,.subnav a.has-new::after{content:"";position:absolute;top:calc(50% - 11px);right:-8px;width:6px;height:6px;border-radius:50%;background:var(--new)}
+.newtag{display:inline-block;font-size:10px;font-weight:700;line-height:1;color:#fff;background:var(--new);border-radius:3px;padding:2px 3px;margin-right:5px;vertical-align:1px}

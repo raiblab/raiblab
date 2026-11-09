@@ -95,7 +95,7 @@ function go(k){
   /* 표지(첫 화면): 주소 뒤에 #이 없을 때 */
   const intro=!k||k==="intro";
   document.body.classList.toggle("is-intro",intro);$("#intro").hidden=!intro;
-  if(intro){current="intro";document.querySelectorAll(".view").forEach(v=>v.hidden=true);document.querySelectorAll("#tabs a").forEach(a=>a.removeAttribute("aria-current"));renderPageHead("");window.scrollTo(0,0);return}
+  if(intro){current="intro";document.querySelectorAll(".view").forEach(v=>v.hidden=true);document.querySelectorAll("#tabs a").forEach(a=>a.removeAttribute("aria-current"));renderPageHead("");renderDots();window.scrollTo(0,0);return}
   if(k==="members")k="officers";
   if(!TABS.some(t=>t[0]===k))k="home";
   current=k;
@@ -119,7 +119,8 @@ function render(){
   if(current==="greeting")renderLetter("greeting","교수님 인사말");
   if(current==="chair")renderLetter("chair","회장 인사말");
   if(current==="officers"){renderOfficers();renderMembers()}
-  if(BOARDS[current])renderBoard(current);
+  if(BOARDS[current]){renderBoard(current);if(S.loaded)markSeen(current)}
+  renderDots();
 }
 function renderWho(){
   const w=$("#who");const mem=myMember();const adm=S.canEdit?'<span class="adm">관리자</span>':"";
@@ -133,13 +134,31 @@ function renderWho(){
     $("#h-login").onclick=loginModal;$("#h-join").onclick=signupModal;
   }
 }
+/* ---------- 새 글 표시(빨간 점) ----------
+   방문자마다 게시판을 마지막으로 본 때를 이 브라우저에 기억해 두고,
+   그 뒤에 올라온 글(최근 14일 안)이 있으면 메인 화면·위쪽 메뉴에 빨간 점을 붙입니다.
+   처음 오는 사람에게는 최근 7일 안의 글을 새 글로 보여 줍니다. */
+const NEW_DAYS=14,FIRST_DAYS=7,DAY=864e5;
+function seenAt(b){try{const v=localStorage.getItem("raib-seen-"+b);return v?Number(v):null}catch(_){return null}}
+function markSeen(b){try{localStorage.setItem("raib-seen-"+b,String(Date.now()))}catch(_){}}
+function isNew(p){const t=new Date(p.createdAt).getTime();if(!t)return false;
+  const now=Date.now(),s=seenAt(p.board);
+  return s?(t>s&&now-t<NEW_DAYS*DAY):(now-t<FIRST_DAYS*DAY)}
+function hasNew(b){return S.loaded&&postsOf(b).some(isNew)}
+const DOT='<span class="newdot" aria-label="새 글"></span>';
+function renderDots(){
+  document.querySelectorAll("#tabs a").forEach(a=>{const g=GROUPS.find(x=>x[0]===a.dataset.g);
+    a.classList.toggle("has-new",!!g&&g[2].some(k=>BOARDS[k]&&k!==current&&hasNew(k)))});
+  document.querySelectorAll(".subnav a").forEach(a=>{const k=a.getAttribute("href").slice(1);
+    a.classList.toggle("has-new",!!BOARDS[k]&&k!==current&&hasNew(k))});
+}
 function loadingOr(html){return S.loaded?html:`<div class="empty">불러오는 중…</div>`}
 function renderHome(){
   const HB=["news","conference","research","edu","golf"];
   $("#home-grid").innerHTML=HB.map((b,i)=>{
     const list=postsOf(b).sort((a,c)=>sortKey(c).localeCompare(sortKey(a))).slice(0,5);
-    const items=list.length?`<ul class="mini">${list.map(p=>`<li><a href="#${b}" data-open="${p.id}">${p.locked?'<span class="lk" aria-label="정회원 전용">🔒</span>':""}${esc(p.title)}</a><time>${fmt(p.date||p.createdAt)}</time></li>`).join("")}</ul>`:`<div class="empty">아직 등록된 글이 없습니다.</div>`;
-    return `<div class="panel${HB.length%2&&i===HB.length-1?" wide":""}"><h3>${BOARDS[b].name}<a href="#${b}">전체 보기 →</a></h3>${loadingOr(items)}</div>`;
+    const items=list.length?`<ul class="mini">${list.map(p=>`<li><a href="#${b}" data-open="${p.id}">${isNew(p)?'<span class="newtag" aria-label="새 글">N</span>':""}${p.locked?'<span class="lk" aria-label="정회원 전용">🔒</span>':""}${esc(p.title)}</a><time>${fmt(p.date||p.createdAt)}</time></li>`).join("")}</ul>`:`<div class="empty">아직 등록된 글이 없습니다.</div>`;
+    return `<div class="panel${HB.length%2&&i===HB.length-1?" wide":""}"><h3><span>${BOARDS[b].name}${hasNew(b)?DOT:""}</span><a href="#${b}">전체 보기 →</a></h3>${loadingOr(items)}</div>`;
   }).join("");
 }
 /* 기본 인사말 — DB에 이보다 나중에 저장한 글이 있으면 그 글을 씁니다 */
