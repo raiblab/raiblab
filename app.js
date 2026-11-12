@@ -214,7 +214,9 @@ function adminMembers(){
 }
 
 /* Alumni: 박사학위 취득자 — 사진 카드 */
-function avatar(m){return m.photo?`<img class="al-ph" src="${esc(m.photo)}" alt="${esc(m.name)}" loading="lazy">`:`<div class="al-ph none" aria-hidden="true">${esc(String(m.name||"").slice(0,1))}</div>`}
+/* 홈페이지 저장소에 넣어 둔 사진 (DB에 사진이 없을 때 사용) */
+const MEMBER_PHOTOS={"이숙연":"images/alumni/lee-sookyeon.jpg"};
+function avatar(m){m=Object.assign({},m,{photo:m.photo||MEMBER_PHOTOS[m.name]||""});return m.photo?`<img class="al-ph" src="${esc(m.photo)}" alt="${esc(m.name)}" loading="lazy">`:`<div class="al-ph none" aria-hidden="true">${esc(String(m.name||"").slice(0,1))}</div>`}
 function renderAlumni(){
   const el=$("#v-alumni");
   const list=S.members.filter(m=>m.course==="박사").sort((a,b)=>(Number(b.gradYear)||0)-(Number(a.gradYear)||0)||String(a.name).localeCompare(String(b.name),"ko"));
