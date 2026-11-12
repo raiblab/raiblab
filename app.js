@@ -176,7 +176,7 @@ function renderProfessor(){
     return `<section class="cv"><h3>${ko} <small>${en}</small></h3><ul class="tl">${L.map(x=>{const [d,t]=splitLine(x);return `<li><span class="tl-d">${esc(d)}</span><span class="tl-t">${esc(t)}</span></li>`}).join("")}</ul></section>`}).join("");
   el.innerHTML=pageHead("Members","","",adminBtn("ed-prof","지도교수 정보 수정"))+memberTabs("members")+
   `<article class="prof"><img class="prof-ph" src="${esc(P.photo||PROF_DEFAULT.photo)}" alt="${esc(P.name)} 교수">
-    <div class="prof-b"><div class="prof-role">Advisor · 지도교수</div><h2>${esc(P.name)} <small>${esc(P.title)}</small></h2>
+    <div class="prof-b"><h2>${esc(P.name)} <small>${esc(P.title)}</small></h2>
     <dl class="pinfo">${info.map(([k,v])=>`<div><dt>${k}</dt><dd>${v}</dd></div>`).join("")}</dl>
     ${fields.length?`<div class="pfield"><span class="pf-l">연구 분야</span><div class="chips">${fields.map(f=>`<span>${esc(f)}</span>`).join("")}</div></div>`:""}
     ${url(P.scholar)?`<a class="btn ghost sm" href="${esc(P.scholar)}" target="_blank" rel="noopener">Google Scholar ↗</a>`:""}</div></article>
