@@ -193,7 +193,8 @@ function renderGroup(k){
     :(a,b)=>genOf(a)-genOf(b)||String(a.name).localeCompare(String(b.name),"ko"));
   const ed=m=>S.canEdit?`<span class="mact"><button class="lnk" data-mem="${m.id}">수정</button><button class="lnk danger" data-mdel="${m.id}">삭제</button></span>`:"";
   const inner=!S.loaded?loading():!list.length?`<p class="empty">${S.membersOk?"등록된 구성원이 없습니다.":"명단을 준비 중입니다."}</p>`
-    :`<ul class="people">${list.map(m=>`<li><div class="pp-n">${esc(m.name)}${ed(m)}</div>${k==="phd"?`<div class="pp-m">${[m.gradYear&&m.gradYear+" 학위 취득",m.degree||"부동산학 박사"].filter(Boolean).map(esc).join(" · ")}</div>${m.org?`<div class="pp-o">${esc(m.org)}</div>`:""}`:""}</li>`).join("")}</ul>`;
+    :(()=>{const G={};list.forEach(m=>{const g=Number(m.gen)||Number((ALUMNI_INFO[m.name]||{}).gen)||0;(G[g]=G[g]||[]).push(m)});
+      return `<div class="gens">${Object.keys(G).map(Number).sort((a,b)=>(a||9999)-(b||9999)).map(g=>`<div class="gen"><div class="gen-h">${g?g+"기":"기수 미기재"}</div><ul class="gen-n">${G[g].map(m=>`<li>${esc(m.name)}${ed(m)}</li>`).join("")}</ul></div>`).join("")}</div>`})();
   let btns=adminBtn("m-add",{students:"재학생 추가",abd:"수료생 추가"}[k]||"구성원 추가");
   el.innerHTML=pageHead("Members","","",btns)+memberTabs(k)+`<div class="grp-h"><h2>${ko} <small>${en}</small></h2></div>`+inner;
   bind("m-add",()=>editMember({course},false));

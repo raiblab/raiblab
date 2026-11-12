@@ -312,3 +312,11 @@ td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 
 .al-y{font-size:13.5px;color:var(--muted);margin-top:1px;font-variant-numeric:tabular-nums}
 .mact{display:inline-flex;gap:8px;margin-left:8px;vertical-align:1px}.mact .lnk{font-size:12px}
+
+/* 재학생·수료생: 기수별로 한 줄씩 */
+.gens{border-top:1px solid var(--line)}
+.gen{display:grid;grid-template-columns:90px minmax(0,1fr);gap:16px;align-items:baseline;padding:16px 2px;border-bottom:1px solid var(--line)}
+.gen-h{font-size:17px;font-weight:800;color:var(--gold);font-variant-numeric:tabular-nums}
+.gen-n{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px 26px}
+.gen-n li{font-size:17px;font-weight:600}
+@media (max-width:560px){.gen{grid-template-columns:64px minmax(0,1fr);gap:10px}.gen-n{gap:4px 18px}.gen-n li,.gen-h{font-size:16px}}
