@@ -217,8 +217,10 @@ function adminMembers(){
 /* 홈페이지 저장소에 넣어 둔 사진 (DB에 사진이 없을 때 사용) */
 const MEMBER_PHOTOS={"이숙연":"images/alumni/lee-sookyeon.jpg","손갑주":"images/alumni/son-gapju.jpg"};
 /* 졸업생 카드에 따로 정해 둔 내용 (DB 값보다 우선) */
-const ALUMNI_INFO={"이숙연":{gen:14,degree:"부동산학 박사",grad:"2026.2",org:"(주)와이유"},"손갑주":{gen:12}};
-const genOf=m=>Number((ALUMNI_INFO[m.name]||{}).gen||m.gen)||9999;
+/* gen: 정렬용 기수 — 기수를 아직 모르는 분은 받은 순서(김세형·강현석·이현미·김종희·손갑주·허진·진원겸·이숙연)대로 사이값을 넣어 둠. DB에 기수를 넣으면 그 값이 우선 */
+const ALUMNI_INFO={"김세형":{gen:8.5},"강현석":{gen:9},"이현미":{gen:10.5},"김종희":{gen:11.5},"손갑주":{gen:12},"허진":{gen:13.3},"진원겸":{gen:13.6},
+  "이숙연":{gen:14,degree:"부동산학 박사",grad:"2026.2",org:"(주)와이유"}};
+const genOf=m=>Number(m.gen||(ALUMNI_INFO[m.name]||{}).gen)||9999;
 function avatar(m){m=Object.assign({},m,{photo:m.photo||MEMBER_PHOTOS[m.name]||""});return m.photo?`<img class="al-ph" src="${esc(m.photo)}" alt="${esc(m.name)}" loading="lazy">`:`<div class="al-ph none" aria-hidden="true">${esc(String(m.name||"").slice(0,1))}</div>`}
 function renderAlumni(){
   const el=$("#v-alumni");
