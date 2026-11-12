@@ -3,75 +3,52 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>레이브랩 RAIB Lab</title>
-<meta name="description" content="상명대학교 일반대학원 부동산학 박사 연구실 레이브랩(RAIB Lab, Real Estate AI & Big Data Lab) 홈페이지">
+<title>RAIB Lab · 레이브랩</title>
+<meta name="description" content="레이브랩(RAIB Lab)은 빅데이터와 인공지능을 활용하여 부동산시장과 주택시장을 연구합니다. 상명대학교 대학원 부동산학 · 지도교수 전해정">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://raiblab.netlify.app/">
-<meta property="og:site_name" content="레이브랩 RAIB Lab">
-<meta property="og:title" content="레이브랩 RAIB Lab">
-<meta property="og:description" content="상명대학교 일반대학원 부동산학 박사 연구실 · 지도교수 전해정">
+<meta property="og:site_name" content="RAIB Lab · 레이브랩">
+<meta property="og:title" content="RAIB Lab · 레이브랩">
+<meta property="og:description" content="빅데이터와 인공지능으로 부동산시장과 주택시장을 연구합니다. 상명대학교 대학원 부동산학 · 지도교수 전해정">
 <meta property="og:image" content="https://raiblab.netlify.app/images/raib-logo.png">
 <meta property="og:image:width" content="560">
 <meta property="og:image:height" content="415">
+<meta name="theme-color" content="#ffffff">
 <link rel="icon" href="images/raib-mark.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@700;800&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
-<link rel="stylesheet" href="style.css?v=20261027d">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="style.css?v=20261112">
 </head>
 <body>
 <header class="top">
   <div class="wrap bar">
-    <a class="brand" href="#intro"><img class="mark" src="images/raib-mark.png" alt=""><span class="bt"><b>RAIB Lab</b><span>상명대학교 일반대학원 부동산학 박사 연구실</span></span></a>
-    <nav class="tabs" aria-label="주요 메뉴" id="tabs"></nav>
-    <div class="who" id="who"></div>
+    <a class="brand" href="#home" aria-label="RAIB Lab 처음 화면"><img src="images/raib-mark.png" alt=""><span><b>RAIB Lab</b><small>Real Estate AI &amp; Big Data Lab</small></span></a>
+    <nav class="menu" id="menu" aria-label="주요 메뉴"></nav>
   </div>
 </header>
+<div class="adminbar" id="who" hidden></div>
 
-<section class="intro" id="intro" hidden>
-  <div class="wrap intro-in">
-    <img class="intro-logo" src="images/raib-logo-en.png" alt="RAIB Lab, Real Estate AI &amp; Big Data Lab">
-    <h2 class="intro-h">데이터로 읽는 부동산시장,<br>AI로 넓히는 연구의 가능성</h2>
-    <p>레이브랩(RAIB Lab)은 빅데이터와 인공지능을 활용하여 부동산시장과 주택시장을 연구합니다. 데이터에 기반한 분석으로 새로운 지식과 가치를 만들어 갑니다.</p>
-    <a class="intro-go" href="#home">연구실 소개</a>
-  </div>
-</section>
-<main class="wrap">
-  <div class="pagehead" id="pagehead" hidden></div>
-  <!-- HOME -->
-  <section class="view" id="v-home">
-    <div class="hero">
-      <div class="emblem"><img class="smu" src="images/smu-emblem.png" alt="상명대학교 엠블럼"><img src="images/raib-logo.png" alt="레이브랩 엠블럼: RAIB Lab, Real Estate AI &amp; Big Data Lab"></div>
-      <div>
-        <div class="eyebrow">Sangmyung University · Real Estate</div>
-        <h1>부동산 AI·빅데이터 연구실</h1>
-        <dl class="facts">
-          <dt>연구실</dt><dd>레이브랩 (RAIB Lab, Real Estate AI &amp; Big Data Lab)</dd>
-          <dt>소속</dt><dd>상명대학교 일반대학원 부동산학 박사 연구실</dd>
-          <dt>지도교수</dt><dd>전해정 교수</dd>
-        </dl>
-        <div class="chips"><span class="chip">부동산 시장 분석</span><span class="chip">주택시장</span><span class="chip">빅데이터</span><span class="chip">인공지능(AI)</span><span class="chip">데이터 애널리틱스</span></div>
-      </div>
-    </div>
-    <div class="home-grid" id="home-grid"></div>
-  </section>
-
-  <section class="view" id="v-greeting" hidden></section>
-  <section class="view" id="v-chair" hidden></section>
-  <section class="view" id="v-officers" hidden><div id="off-box"></div><div id="golf-off-box" class="mem-box"></div><div id="v-members" class="mem-box"></div></section>
-  <section class="view" id="v-research" hidden></section>
-  <section class="view" id="v-conference" hidden></section>
+<main class="wrap" id="main">
+  <section class="view" id="v-home"></section>
+  <section class="view" id="v-members" hidden></section>
+  <section class="view" id="v-alumni" hidden></section>
+  <section class="view" id="v-publications" hidden></section>
+  <section class="view" id="v-projects" hidden></section>
   <section class="view" id="v-news" hidden></section>
-  <section class="view" id="v-edu" hidden></section>
-  <section class="view" id="v-golf" hidden></section>
+  <section class="view" id="v-community" hidden></section>
+  <section class="view" id="v-admissions" hidden></section>
 </main>
 
-<footer><div class="wrap"><div class="f-brand"><img src="images/smu-emblem.png" alt="상명대학교 엠블럼"><div><b>RAIB Lab</b><span>Real Estate AI &amp; Big Data Lab</span></div></div><div class="f-txt">상명대학교 일반대학원 부동산학 박사 연구실<br>지도교수 전해정</div></div></footer>
+<footer class="foot">
+  <div class="wrap foot-in">
+    <div class="foot-brand"><img src="images/smu-emblem.png" alt="상명대학교 엠블럼"><div><b>RAIB Lab</b><span>Real Estate AI &amp; Big Data Lab</span></div></div>
+    <div class="foot-txt">상명대학교 대학원 부동산학 · 지도교수 전해정<br><span class="copy">© RAIB Lab</span> <button type="button" class="foot-login" id="foot-login">관리자 로그인</button></div>
+  </div>
+</footer>
 
 <div id="modal-root"></div>
 
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
-<script src="config.js?v=20261027d"></script>
-<script src="app.js?v=20261027d"></script>
+<script src="config.js?v=20261112"></script>
+<script src="app.js?v=20261112"></script>
 </body>
 </html>

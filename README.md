@@ -16,7 +16,16 @@
 5. SQL Editor에서 `supabase/make-admin.sql`(이메일 바꿔서) **Run** → 관리자 지정
 6. SQL Editor에서 `supabase/import-old-data.sql`(이메일 바꿔서) **Run** → 기존 글·임원 명단 옮기기
 
-## 팝업 공지 · 정회원 전용 글 (2026-10-25 추가)
+## 2026-11 개편 (연구실 중심 · 로그인 없이 모두 공개)
+
+- 처음 한 번: Supabase → SQL Editor → `supabase/update-2026-11-renewal.sql` 붙여넣고 **Run**
+- 메뉴: Members / Alumni / Publications / Projects / News / Community / Admissions (표지·인사말 없음)
+- 구성원 구분: 박사과정 → 재학생, 박사수료 → 수료생(Members), 박사 → 졸업생(Alumni, 졸업연도·학위·소속 표시)
+- Publications는 연구실적 중 저자에 '전해정'이 들어간 학술지 논문만 자동으로 보입니다. Projects는 '공동연구과제'(진행 중 / 완료)
+- 지도교수 정보·입학 안내·골프회 모임 안내는 관리자로 로그인하면 각 화면의 ‘수정’ 단추로 고칩니다
+- 로그인은 바닥글의 ‘관리자 로그인’에서 합니다. 정회원 전용(비밀번호) 글 기능은 없앴습니다
+
+## 팝업 공지 (2026-10-25 추가)
 
 - 처음 한 번: Supabase → SQL Editor → `supabase/update-popup-lock.sql` 붙여넣고 **Run**
 - **팝업 관리**: 관리자로 로그인하면 위쪽에 버튼이 생깁니다. 시작일·종료일, 위치(왼쪽·위), 크기(너비·높이), 이미지, 링크를 정할 수 있고, 점선 미리보기 창을 끌어서 위치·크기를 잡으면 숫자가 자동으로 들어갑니다. 휴대폰에서는 화면 가운데에 맞춰 뜹니다. 방문자는 ‘오늘 하루 보지 않기’ / ‘닫기’로 닫습니다.
