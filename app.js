@@ -215,7 +215,7 @@ function adminMembers(){
 
 /* Alumni: 박사학위 취득자 — 사진 카드 */
 /* 홈페이지 저장소에 넣어 둔 사진 (DB에 사진이 없을 때 사용) */
-const MEMBER_PHOTOS={"이숙연":"images/alumni/lee-sookyeon.jpg"};
+const MEMBER_PHOTOS={"이숙연":"images/alumni/lee-sookyeon.jpg","손갑주":"images/alumni/son-gapju.jpg"};
 function avatar(m){m=Object.assign({},m,{photo:m.photo||MEMBER_PHOTOS[m.name]||""});return m.photo?`<img class="al-ph" src="${esc(m.photo)}" alt="${esc(m.name)}" loading="lazy">`:`<div class="al-ph none" aria-hidden="true">${esc(String(m.name||"").slice(0,1))}</div>`}
 function renderAlumni(){
   const el=$("#v-alumni");
