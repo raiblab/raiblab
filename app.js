@@ -189,7 +189,7 @@ function renderGroup(k){
   const [course,ko,en,desc]=GROUPS[k];const el=$("#v-"+k);
   const list=S.members.filter(m=>m.course===course).sort(k==="phd"
     ?(a,b)=>(Number(b.gradYear)||0)-(Number(a.gradYear)||0)||String(a.name).localeCompare(String(b.name),"ko")
-    :(a,b)=>(Number(a.gen)||9999)-(Number(b.gen)||9999)||String(a.name).localeCompare(String(b.name),"ko"));
+    :(a,b)=>genOf(a)-genOf(b)||String(a.name).localeCompare(String(b.name),"ko"));
   const ed=m=>S.canEdit?` <button class="lnk" data-mem="${m.id}">수정</button>`:"";
   const inner=!S.loaded?loading():!list.length?`<p class="empty">${S.membersOk?"등록된 구성원이 없습니다.":"명단을 준비 중입니다."}</p>`
     :`<ul class="people">${list.map(m=>`<li><div class="pp-n">${esc(m.name)}${ed(m)}</div>${k==="phd"?`<div class="pp-m">${[m.gradYear&&m.gradYear+" 학위 취득",m.degree||"부동산학 박사"].filter(Boolean).map(esc).join(" · ")}</div>${m.org?`<div class="pp-o">${esc(m.org)}</div>`:""}`:""}</li>`).join("")}</ul>`;
@@ -217,12 +217,13 @@ function adminMembers(){
 /* 홈페이지 저장소에 넣어 둔 사진 (DB에 사진이 없을 때 사용) */
 const MEMBER_PHOTOS={"이숙연":"images/alumni/lee-sookyeon.jpg","손갑주":"images/alumni/son-gapju.jpg"};
 /* 졸업생 카드에 따로 정해 둔 내용 (DB 값보다 우선) */
-const ALUMNI_INFO={"이숙연":{degree:"부동산학 박사",grad:"2026.2",org:"(주)와이유"}};
+const ALUMNI_INFO={"이숙연":{gen:14,degree:"부동산학 박사",grad:"2026.2",org:"(주)와이유"},"손갑주":{gen:12}};
+const genOf=m=>Number((ALUMNI_INFO[m.name]||{}).gen||m.gen)||9999;
 function avatar(m){m=Object.assign({},m,{photo:m.photo||MEMBER_PHOTOS[m.name]||""});return m.photo?`<img class="al-ph" src="${esc(m.photo)}" alt="${esc(m.name)}" loading="lazy">`:`<div class="al-ph none" aria-hidden="true">${esc(String(m.name||"").slice(0,1))}</div>`}
 function renderAlumni(){
   const el=$("#v-alumni");
   /* 기수 순서 (기수가 빠른 사람이 먼저, 기수 없으면 맨 뒤) */
-  const list=S.members.filter(m=>m.course==="박사").sort((a,b)=>(Number(a.gen)||9999)-(Number(b.gen)||9999)||String(a.name).localeCompare(String(b.name),"ko"));
+  const list=S.members.filter(m=>m.course==="박사").sort((a,b)=>genOf(a)-genOf(b)||String(a.name).localeCompare(String(b.name),"ko"));
   const inner=!S.loaded?loading():!list.length?`<p class="empty">${S.membersOk?"등록된 졸업생이 없습니다.":"명단을 준비 중입니다."}</p>`
     :`<ul class="alums">${list.map(m=>`<li>${avatar(m)}<div class="al-b"><div class="al-n">${esc(m.name)}${S.canEdit?` <button class="lnk" data-mem="${m.id}">수정</button>`:""}</div>${(()=>{const x=ALUMNI_INFO[m.name]||{};const grad=x.grad||m.gradYear,org=x.org||m.org;return `<div class="al-d">${esc(x.degree||m.degree||"부동산학 박사")}</div>${grad?`<div class="al-y">${esc(grad)} 학위취득</div>`:""}${org?`<div class="al-o">${esc(org)}</div>`:""}`})()}</div></li>`).join("")}</ul>`;
   el.innerHTML=pageHead("Alumni","","레이브랩에서 박사학위를 취득한 졸업생입니다."+(S.loaded&&list.length?` (${list.length}명)`:""),adminBtn("m-add","졸업생 추가"))+inner;
