@@ -221,7 +221,8 @@ const ALUMNI_INFO={"이숙연":{degree:"부동산학 박사",grad:"2026.2",org:"
 function avatar(m){m=Object.assign({},m,{photo:m.photo||MEMBER_PHOTOS[m.name]||""});return m.photo?`<img class="al-ph" src="${esc(m.photo)}" alt="${esc(m.name)}" loading="lazy">`:`<div class="al-ph none" aria-hidden="true">${esc(String(m.name||"").slice(0,1))}</div>`}
 function renderAlumni(){
   const el=$("#v-alumni");
-  const list=S.members.filter(m=>m.course==="박사").sort((a,b)=>(Number(b.gradYear)||0)-(Number(a.gradYear)||0)||String(a.name).localeCompare(String(b.name),"ko"));
+  /* 기수 순서 (기수가 빠른 사람이 먼저, 기수 없으면 맨 뒤) */
+  const list=S.members.filter(m=>m.course==="박사").sort((a,b)=>(Number(a.gen)||9999)-(Number(b.gen)||9999)||String(a.name).localeCompare(String(b.name),"ko"));
   const inner=!S.loaded?loading():!list.length?`<p class="empty">${S.membersOk?"등록된 졸업생이 없습니다.":"명단을 준비 중입니다."}</p>`
     :`<ul class="alums">${list.map(m=>`<li>${avatar(m)}<div class="al-b"><div class="al-n">${esc(m.name)}${S.canEdit?` <button class="lnk" data-mem="${m.id}">수정</button>`:""}</div>${(()=>{const x=ALUMNI_INFO[m.name]||{};const grad=x.grad||m.gradYear,org=x.org||m.org;return `<div class="al-d">${esc(x.degree||m.degree||"부동산학 박사")}</div>${grad?`<div class="al-y">${esc(grad)} 학위취득</div>`:""}${org?`<div class="al-o">${esc(org)}</div>`:""}`})()}</div></li>`).join("")}</ul>`;
   el.innerHTML=pageHead("Alumni","","레이브랩에서 박사학위를 취득한 졸업생입니다."+(S.loaded&&list.length?` (${list.length}명)`:""),adminBtn("m-add","졸업생 추가"))+inner;
@@ -351,7 +352,7 @@ const courseLabel=c=>({"박사과정":"재학생","박사수료":"수료생","�
 function memberFields(m){return `
     <div class="row2"><label for="m-name">성명<input id="m-name" name="name" required value="${esc(m.name)}"></label>
     <label for="m-course">구분<select id="m-course" name="course">${COURSES.map(c=>`<option value="${c}"${c===m.course?" selected":""}>${courseLabel(c)} (${c})</option>`).join("")}</select></label></div>
-    <div class="row2"><label for="m-gen">기수 (숫자만)<input id="m-gen" name="gen" type="number" min="1" max="200" value="${esc(m.gen)}"></label><label for="m-year">입학 연도 (선택)<input id="m-year" name="year" type="number" min="1990" max="2100" value="${esc(m.year)}"></label></div>
+    <div class="row2"><label for="m-gen">기수 (숫자만 · 졸업생 순서도 이 기수 순)<input id="m-gen" name="gen" type="number" min="1" max="200" value="${esc(m.gen)}"></label><label for="m-year">입학 연도 (선택)<input id="m-year" name="year" type="number" min="1990" max="2100" value="${esc(m.year)}"></label></div>
     ${S.hasGrad||!S.members.length?`<div class="row2"><label for="m-grad">졸업연도 (졸업생만)<input id="m-grad" name="grad_year" type="number" min="1990" max="2100" value="${esc(m.gradYear)}"></label><label for="m-degree">학위 (졸업생만)<input id="m-degree" name="degree" placeholder="부동산학 박사" value="${esc(m.degree)}"></label></div>`:""}
     <label for="m-photo">사진 (졸업생 페이지에 표시 · 선택)${m.photo?`<span class="hint">지금 사진이 있습니다. 바꿀 때만 고르세요.</span>`:""}<input id="m-photo" name="photo" type="file" accept="image/*"></label>
     <label for="m-org">소속 (직장·직위)<input id="m-org" name="org" placeholder="예: ○○공사 차장" value="${esc(m.org)}"></label>
