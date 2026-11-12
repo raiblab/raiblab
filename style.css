@@ -333,3 +333,8 @@ td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 .gen-n{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px 26px}
 .gen-n li{font-size:17px;font-weight:600}
 @media (max-width:560px){.gen{grid-template-columns:64px minmax(0,1fr);gap:10px}.gen-n{gap:4px 18px}.gen-n li,.gen-h{font-size:16px}}
+
+/* 관리자: 재학생 → 수료 이동 단추 */
+.lnk.move{color:var(--navy-2);font-weight:700}
+.gen-n li.gen-all{font-size:13px;font-weight:600}
+.gen-n li.gen-all .lnk{font-size:13px;border:1px solid var(--line);border-radius:999px;padding:3px 10px}

@@ -215,14 +215,31 @@ function renderGroup(k){
   const list=S.members.filter(m=>m.course===course).sort(k==="phd"
     ?(a,b)=>(Number(b.gradYear)||0)-(Number(a.gradYear)||0)||String(a.name).localeCompare(String(b.name),"ko")
     :(a,b)=>genOf(a)-genOf(b)||String(a.name).localeCompare(String(b.name),"ko"));
-  const ed=m=>S.canEdit?`<span class="mact"><button class="lnk" data-mem="${m.id}">수정</button><button class="lnk danger" data-mdel="${m.id}">삭제</button></span>`:"";
+  const mv=m=>k==="students"?`<button class="lnk move" data-mv="${m.id}">수료로 이동</button>`:"";
+  const ed=m=>S.canEdit?`<span class="mact">${mv(m)}<button class="lnk" data-mem="${m.id}">수정</button><button class="lnk danger" data-mdel="${m.id}">삭제</button></span>`:"";
+  const genMv=g=>S.canEdit&&k==="students"&&g?`<button class="lnk move" data-mvg="${g}">${g}기 전체 수료</button>`:"";
   const inner=!S.loaded?loading():!list.length?`<p class="empty">${S.membersOk?"등록된 구성원이 없습니다.":"명단을 준비 중입니다."}</p>`
     :(()=>{const G={};list.forEach(m=>{const g=Number(m.gen)||Number((ALUMNI_INFO[m.name]||{}).gen)||0;(G[g]=G[g]||[]).push(m)});
-      return `<div class="gens">${Object.keys(G).map(Number).sort((a,b)=>(a||9999)-(b||9999)).map(g=>`<div class="gen"><div class="gen-h">${g?g+"기":"기수 미기재"}</div><ul class="gen-n">${G[g].map(m=>`<li>${esc(m.name)}${ed(m)}</li>`).join("")}</ul></div>`).join("")}</div>`})();
+      return `<div class="gens">${Object.keys(G).map(Number).sort((a,b)=>(a||9999)-(b||9999)).map(g=>`<div class="gen"><div class="gen-h">${g?g+"기":"기수 미기재"}</div><ul class="gen-n">${G[g].map(m=>`<li>${esc(m.name)}${ed(m)}</li>`).join("")}${G[g].length>1&&genMv(g)?`<li class="gen-all">${genMv(g)}</li>`:""}</ul></div>`).join("")}</div>`})();
   let btns=adminBtn("m-add",{students:"재학생 추가",abd:"수료생 추가"}[k]||"구성원 추가");
   el.innerHTML=pageHead("Members","","",btns)+memberTabs(k)+`<div class="grp-h"><h2>${ko} <small>${en}</small></h2></div>`+inner;
   bind("m-add",()=>editMember({course},false));
   bindMemberButtons(el);
+  if(k==="students"){
+    el.querySelectorAll("[data-mv]").forEach(b=>b.onclick=()=>moveToAbd(list.filter(m=>m.id===b.dataset.mv)));
+    el.querySelectorAll("[data-mvg]").forEach(b=>b.onclick=()=>moveToAbd(list.filter(m=>(Number(m.gen)||Number((ALUMNI_INFO[m.name]||{}).gen)||0)===Number(b.dataset.mvg))));
+  }
+}
+/* 관리자: 재학생 → 수료생으로 이동 (한 명 또는 기수 전체) */
+function moveToAbd(ms){if(!ms.length)return;
+  const names=ms.map(m=>esc(m.name)).join(", ");
+  const md=modal(`<h2>수료생으로 이동</h2><div class="content"><b>${names}</b> 님을 재학생에서 <b>수료생</b>으로 옮길까요?<br><small>잘못 옮긴 경우 수료생 화면에서 ‘수정’을 눌러 구분을 ‘재학생’으로 되돌릴 수 있습니다.</small></div><div class="err" id="mverr"></div>
+    <div class="actions"><button class="btn ghost" id="mvc">취소</button><button class="btn" id="mvy">수료생으로 이동</button></div>`);
+  md.querySelector("#mvc").onclick=close;
+  md.querySelector("#mvy").onclick=async()=>{const b=$("#mvy");b.disabled=true;
+    try{must(await sb.from("members").update({course:"박사수료",updated_at:new Date().toISOString()}).in("id",ms.map(m=>m.id)));
+      close();toast(ms.length>1?`${ms.length}명을 수료생으로 옮겼습니다`:"수료생으로 옮겼습니다");loadAll()}
+    catch(e){b.disabled=false;$("#mverr").textContent="옮기지 못했습니다. "+errMsg(e)}};
 }
 /* 관리자: 명단에서 삭제 */
 function delMember(m){
