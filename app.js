@@ -66,7 +66,7 @@ const canWrite=()=>S.canEdit;
 /* ---------- DB ↔ 화면 ---------- */
 const toPost=r=>({id:r.id,board:r.board,title:r.title||"",body:r.body||"",date:r.date||"",kind:r.kind||"",year:r.year||"",authors:r.authors||"",venue:r.venue||"",link:r.link||"",period:r.period||"",status:r.status||"",authorName:r.author_name||"",authorId:r.author_id||"",photos:Array.isArray(r.photos)?r.photos:[],createdAt:r.created_at});
 const toOfficer=r=>({id:r.id,section:r.section||"임원",term:r.term||"",period:r.period||"",role:r.role||"",name:r.name||"",note:r.note||"",termOrder:r.term_order});
-const toMember=r=>({id:r.id,userId:r.user_id||"",name:r.name||"",phone:r.phone||"",gen:r.gen||"",course:r.course||"",year:r.year||"",email:r.email||"",org:r.org||"",field:r.field||"",scholar:r.scholar||"",gradYear:r.grad_year||"",degree:r.degree||"",photo:r.photo||"",joinedAt:r.joined_at});
+const toMember=r=>({id:r.id,userId:r.user_id||"",name:r.name||"",phone:r.phone||"",gen:r.gen||"",course:r.course||"",year:r.year||"",email:r.email||"",org:r.org||"",field:r.field||"",scholar:r.scholar||"",gradYear:r.grad_year||"",gradDate:r.grad_date||"",degree:r.degree||"",photo:r.photo||"",joinedAt:r.joined_at});
 const pageData=(key,def)=>{const d=Object.assign({},def),st=((S.pages[key]||{}).data)||{};
   Object.keys(st).forEach(k=>{const v=st[k];if(v==null||v===""||(Array.isArray(v)&&!v.length))return;d[k]=v});
   if(key==="professor"&&lines(st.bio).length&&!lines(st.career).length)d.career=st.bio;return d};
@@ -238,7 +238,7 @@ function renderAlumni(){
   /* 기수 순서 (기수가 빠른 사람이 먼저, 기수 없으면 맨 뒤) */
   const list=S.members.filter(m=>m.course==="박사").sort((a,b)=>genOf(a)-genOf(b)||String(a.name).localeCompare(String(b.name),"ko"));
   const inner=!S.loaded?loading():!list.length?`<p class="empty">${S.membersOk?"등록된 졸업생이 없습니다.":"명단을 준비 중입니다."}</p>`
-    :`<ul class="alums">${list.map(m=>`<li>${avatar(m)}<div class="al-b"><div class="al-n">${esc(m.name)}${S.canEdit?`<span class="mact"><button class="lnk" data-mem="${m.id}">수정</button><button class="lnk danger" data-mdel="${m.id}">삭제</button></span>`:""}</div>${(()=>{const x=ALUMNI_INFO[m.name]||{};const grad=x.grad||m.gradYear,org=x.org||m.org;return `<div class="al-d">${esc(x.degree||m.degree||"부동산학 박사")}</div>${grad?`<div class="al-y">${esc(grad)} 학위취득</div>`:""}${org?`<div class="al-o">${esc(org)}</div>`:""}`})()}</div></li>`).join("")}</ul>`;
+    :`<ul class="alums">${list.map(m=>`<li>${avatar(m)}<div class="al-b"><div class="al-n">${esc(m.name)}${S.canEdit?`<span class="mact"><button class="lnk" data-mem="${m.id}">수정</button><button class="lnk danger" data-mdel="${m.id}">삭제</button></span>`:""}</div>${(()=>{const x=ALUMNI_INFO[m.name]||{};const grad=m.gradDate||x.grad||m.gradYear,org=x.org||m.org;return `<div class="al-d">${esc(x.degree||m.degree||"부동산학 박사")}</div>${grad?`<div class="al-y">${esc(grad)} 학위취득</div>`:""}${org?`<div class="al-o">${esc(org)}</div>`:""}`})()}</div></li>`).join("")}</ul>`;
   el.innerHTML=pageHead("Alumni","","레이브랩에서 박사학위를 취득한 졸업생입니다."+(S.loaded&&list.length?` (${list.length}명)`:""),adminBtn("m-add","졸업생 추가"))+inner;
   bind("m-add",()=>editMember({course:"박사"},false));bindMemberButtons(el);
 }
@@ -367,14 +367,15 @@ function memberFields(m){return `
     <div class="row2"><label for="m-name">성명<input id="m-name" name="name" required value="${esc(m.name)}"></label>
     <label for="m-course">구분<select id="m-course" name="course">${COURSES.map(c=>`<option value="${c}"${c===m.course?" selected":""}>${courseLabel(c)} (${c})</option>`).join("")}</select></label></div>
     <div class="row2"><label for="m-gen">기수 (숫자만 · 졸업생 순서도 이 기수 순)<input id="m-gen" name="gen" type="number" min="1" max="200" value="${esc(m.gen)}"></label><label for="m-year">입학 연도 (선택)<input id="m-year" name="year" type="number" min="1990" max="2100" value="${esc(m.year)}"></label></div>
-    ${S.hasGrad||!S.members.length?`<div class="row2"><label for="m-grad">졸업연도 (졸업생만)<input id="m-grad" name="grad_year" type="number" min="1990" max="2100" value="${esc(m.gradYear)}"></label><label for="m-degree">학위 (졸업생만)<input id="m-degree" name="degree" placeholder="부동산학 박사" value="${esc(m.degree)}"></label></div>`:""}
+    ${S.hasGrad||!S.members.length?`<div class="row2"><label for="m-grad">학위취득 연월 (졸업생만 · 예: 2026.2)<input id="m-grad" name="grad_date" placeholder="2026.2" value="${esc(m.gradDate||m.gradYear)}"></label><label for="m-degree">학위 (졸업생만)<input id="m-degree" name="degree" placeholder="부동산학 박사" value="${esc(m.degree)}"></label></div>`:""}
     <label for="m-photo">사진 (졸업생 페이지에 표시 · 선택)${m.photo?`<span class="hint">지금 사진이 있습니다. 바꿀 때만 고르세요.</span>`:""}<input id="m-photo" name="photo" type="file" accept="image/*"></label>
     <label for="m-org">소속 (직장·직위)<input id="m-org" name="org" placeholder="예: ○○공사 차장" value="${esc(m.org)}"></label>
     <label for="m-field">연구분야 (선택)<input id="m-field" name="field" value="${esc(m.field)}"></label>
     <label for="m-email">연락 이메일 (선택 · 홈페이지에는 공개되지 않음)<input id="m-email" name="email" type="email" value="${esc(m.email)}"></label>`}
 function readMember(fd){const g=k=>(fd.get(k)||"").toString().trim();
   const r={name:g("name"),gen:num(g("gen")),course:g("course"),year:num(g("year")),email:nz(g("email")),org:nz(g("org")),field:nz(g("field"))};
-  if(fd.has("grad_year")){r.grad_year=num(g("grad_year"));r.degree=nz(g("degree"))}return r}
+  if(fd.has("grad_date")){const gd=g("grad_date").replace(/[년\s]+/g,".").replace(/월/g,"").replace(/[-/]/g,".").replace(/\.+$/,"").replace(/\.0(\d)$/,".$1");
+    r.grad_date=nz(gd);r.grad_year=num((gd.match(/\d{4}/)||[])[0]);r.degree=nz(g("degree"))}return r}
 function signupModal(){
   if(!sb)return;if(S.session){editMember({},true);return}
   const m=modal(`<h2>회원가입</h2><form class="form" id="suf">
@@ -393,7 +394,7 @@ function signupModal(){
       else{const mm=modal(`<h2>인증 메일을 보냈습니다</h2><div class="content">${esc(email)}로 보낸 메일의 링크를 누른 뒤 로그인하시면 명단에 자동으로 올라갑니다.</div><div class="actions"><button class="btn" id="ok">확인</button></div>`);mm.querySelector("#ok").onclick=close}
     }catch(err){b.disabled=false;$("#suerr").textContent=errMsg(err)}};
 }
-async function insertSelf(prof){await save(r=>sb.from("members").insert(r),Object.assign({user_id:S.myId},prof),["grad_year","degree","photo"])}
+async function insertSelf(prof){await save(r=>sb.from("members").insert(r),Object.assign({user_id:S.myId},prof),["grad_year","grad_date","degree","photo"])}
 async function ensureMemberRow(session){
   const pend=session&&session.user&&session.user.user_metadata&&session.user.user_metadata.pending_member;
   if(!pend||!S.myId)return;
@@ -417,8 +418,8 @@ function editMember(m,self){
   md.querySelector("#mf").onsubmit=async e=>{e.preventDefault();const fd=new FormData(e.target);const d=readMember(fd);const btn=$("#ms");btn.disabled=true;
     try{const pf=fd.get("photo");if(pf&&pf.size){btn.textContent="사진 올리는 중…";d.photo=(await uploadPhoto(pf)).url}
       if(isNew&&self)await insertSelf(d);
-      else if(isNew)await save(r=>sb.from("members").insert(r),d,["grad_year","degree","photo"]);
-      else{d.updated_at=new Date().toISOString();await save(r=>sb.from("members").update(r).eq("id",m.id),d,["grad_year","degree","photo"])}
+      else if(isNew)await save(r=>sb.from("members").insert(r),d,["grad_year","grad_date","degree","photo"]);
+      else{d.updated_at=new Date().toISOString();await save(r=>sb.from("members").update(r).eq("id",m.id),d,["grad_year","grad_date","degree","photo"])}
       if(!self&&!isNew&&m.userId){const want=!!(e.target.querySelector("#m-admin")||{}).checked,has=S.admins.includes(m.userId);
         if(want&&!has)must(await sb.from("admins").insert({user_id:m.userId}));
         if(!want&&has)must(await sb.from("admins").delete().eq("user_id",m.userId))}
