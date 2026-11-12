@@ -18,14 +18,23 @@ const NEED_SQL="데이터베이스 업데이트가 아직 안 되었습니다. S
 
 /* ---------- 메뉴 ---------- */
 const MENU=[["members","Members"],["alumni","Alumni"],["publications","Publications"],["projects","Projects"],["news","News"],["community","Community"],["admissions","Admissions"]];
-const VIEWS=["home"].concat(MENU.map(m=>m[0]));
+const SUB={members:["members","지도교수"],phd:["members","박사"],abd:["members","박사수료"],students:["members","재학생"]};
+const VIEWS=["home","phd","abd","students"].concat(MENU.map(m=>m[0]));
 /* 예전 주소(#research 등)로 들어와도 맞는 메뉴로 */
 const OLD={research:"publications",officers:"members",conference:"news",golf:"community",edu:"community",greeting:"home",chair:"home",intro:"home"};
 
 /* ---------- 기본 내용 (관리자가 화면에서 바꾸면 DB 값이 우선) ---------- */
+/* 지도교수 이력: 상명대학교 교수프로필(culturalart.smu.ac.kr) 기준. 각 줄은 "기간 | 내용" */
 const PROF_DEFAULT={name:"전해정",title:"교수",aff:"상명대학교 대학원 부동산학과",photo:"images/prof-jeon.jpg",
-  fields:["부동산시장 분석","주택시장","빅데이터","인공지능(AI)","데이터 애널리틱스"],
-  bio:[],edu:[],email:"",scholar:"https://scholar.google.com/citations?hl=ko&user=MlYd81sAAAAJ"};
+  fields:["AI·빅데이터","부동산시장 분석","주택시장","데이터 애널리틱스"],
+  office:"상명대학교 중앙교수회관 S222",phone:"02-2287-6140",email:"hjchun0719@smu.ac.kr",
+  scholar:"https://scholar.google.com/citations?hl=ko&user=MlYd81sAAAAJ",
+  edu:["2025.08 | 연세대학교 정보대학원 박사 (AI·빅데이터)","2012.08 | 중앙대학교 도시계획부동산학과 박사 (부동산)","2008.02 | 연세대학교 경제학과 석사","2003.08 | 연세대학교 생활과학부 학사"],
+  career:["현재 | 상명대학교 교수","2026.01 – 2027.12 | 한국부동산원 『부동산분석』 편집위원","2020.05 – 2028.02 | 한국부동산원 부동산연구원 자문위원","2014.04 – 2019.02 | 성결대학교 조교수"],
+  society:["2019.06 – 2027.02 | 한국부동산학회 부회장·이사","2021.01 – 2027.02 | 한국도시행정학회 상임이사","2024.01 – 2027.02 | 한국감정평가학회 이사","2024.01 – 2027.02 | 한국지역개발학회 이사"],
+  books:["2024.02 | 『프롭테크와 부동산산업』, 부연사"],
+  awards:["2025.08 | 연세대학교 정보대학원 우수논문상","2024.05 | 한국콘텐츠학회 우수논문 학술상","2022.05 | 한국부동산학회 전국부동산학술발표대회 학술발표상 (2022 전반기)","2019.12 | 한국부동산학회 전국부동산학술발표대회 학술발표상 (2019 후반기)","2018.03 | Marquis Who's Who 세계인명사전 등재","2011.12 | 한국주택학회 창립 20주년 기념 정기학술대회 우수논문상"]};
+const PROF_SECTIONS=[["edu","학력","Education"],["career","경력","Career"],["society","학회 활동","Academic Service"],["books","저서","Books"],["awards","수상","Awards"]];
 const GRAD_GUIDE="https://www.smu.ac.kr/grad/admission/guideline.do";
 const ADM_DEFAULT={
   intro:"레이브랩은 빅데이터와 인공지능으로 부동산시장과 주택시장을 연구하고 싶은 대학원생을 환영합니다. 데이터 분석 경험이 많지 않아도 괜찮습니다. 세미나와 공동연구를 통해 함께 배워 갑니다.",
@@ -57,7 +66,9 @@ const canWrite=()=>!!myMember()||S.canEdit;
 const toPost=r=>({id:r.id,board:r.board,title:r.title||"",body:r.body||"",date:r.date||"",kind:r.kind||"",year:r.year||"",authors:r.authors||"",venue:r.venue||"",link:r.link||"",period:r.period||"",status:r.status||"",authorName:r.author_name||"",authorId:r.author_id||"",photos:Array.isArray(r.photos)?r.photos:[],createdAt:r.created_at});
 const toOfficer=r=>({id:r.id,section:r.section||"임원",term:r.term||"",period:r.period||"",role:r.role||"",name:r.name||"",note:r.note||"",termOrder:r.term_order});
 const toMember=r=>({id:r.id,userId:r.user_id||"",name:r.name||"",phone:r.phone||"",gen:r.gen||"",course:r.course||"",year:r.year||"",email:r.email||"",org:r.org||"",field:r.field||"",scholar:r.scholar||"",gradYear:r.grad_year||"",degree:r.degree||"",joinedAt:r.joined_at});
-const pageData=(key,def)=>Object.assign({},def,((S.pages[key]||{}).data)||{});
+const pageData=(key,def)=>{const d=Object.assign({},def),st=((S.pages[key]||{}).data)||{};
+  Object.keys(st).forEach(k=>{const v=st[k];if(v==null||v===""||(Array.isArray(v)&&!v.length))return;d[k]=v});
+  if(key==="professor"&&lines(st.bio).length&&!lines(st.career).length)d.career=st.bio;return d};
 
 async function loadAll(){
   if(!sb){S.loaded=true;render();return}
@@ -95,7 +106,8 @@ function go(k){
   k=OLD[k]||k;if(!VIEWS.includes(k))k="home";
   current=k;
   document.querySelectorAll(".view").forEach(v=>v.hidden=v.id!=="v-"+k);
-  document.querySelectorAll("#menu a").forEach(a=>{if(a.dataset.k===k)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
+  const mk=(SUB[k]||[k])[0];
+  document.querySelectorAll("#menu a").forEach(a=>{if(a.dataset.k===mk)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
   const act=$("#menu a[aria-current]");act&&act.scrollIntoView({block:"nearest",inline:"nearest"});
   render();window.scrollTo(0,0);
 }
@@ -132,7 +144,7 @@ function cards(list,emptyMsg){return list.length?`<div class="cards">${list.map(
 /* ---------- 렌더 ---------- */
 function render(){
   renderWho();
-  ({home:renderHome,members:renderMembers,alumni:renderAlumni,publications:renderPubs,projects:renderProjects,news:renderNews,community:renderCommunity,admissions:renderAdmissions})[current]();
+  ({home:renderHome,members:renderProfessor,phd:()=>renderGroup("phd"),abd:()=>renderGroup("abd"),students:()=>renderGroup("students"),alumni:renderAlumni,publications:renderPubs,projects:renderProjects,news:renderNews,community:renderCommunity,admissions:renderAdmissions})[current]();
 }
 function renderWho(){
   const w=$("#who");const fl=$("#foot-login");
@@ -153,27 +165,36 @@ function renderHome(){
   <div class="home-sec"><div class="sec-h"><h2>News</h2><a href="#news">전체 보기 →</a></div>${!S.loaded?loading():cards(N,"등록된 소식이 없습니다.")}</div>`;
 }
 
-/* Members: 지도교수 · 재학생 · 수료생 */
-function renderMembers(){
-  const el=$("#v-members");const P=pageData("professor",PROF_DEFAULT);
-  const fields=lines(P.fields),bio=lines(P.bio),edu=lines(P.edu);
-  const row=(k,v)=>v?`<div class="pr-row"><dt>${k}</dt><dd>${v}</dd></div>`:"";
-  const prof=`<article class="prof"><img class="prof-ph" src="${esc(P.photo||PROF_DEFAULT.photo)}" alt="${esc(P.name)} 교수">
-    <div class="prof-b"><div class="prof-role">Advisor · 지도교수</div><h2>${esc(P.name)} <small>${esc(P.title)}</small></h2><p class="prof-aff">${esc(P.aff)}</p>
-    <dl>${row("연구 분야",fields.length?`<div class="chips">${fields.map(f=>`<span>${esc(f)}</span>`).join("")}</div>`:"")}
-    ${row("학력",edu.length?`<ul>${edu.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:"")}
-    ${row("약력",bio.length?`<ul>${bio.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:"")}
-    ${row("이메일",P.email?`<a href="mailto:${esc(P.email)}">${esc(P.email)}</a>`:"")}</dl>
-    ${url(P.scholar)?`<a class="btn ghost sm" href="${esc(P.scholar)}" target="_blank" rel="noopener">Google Scholar ↗</a>`:""}${adminBtn("ed-prof","지도교수 정보 수정")}</div></article>`;
-  const sortM=(a,b)=>(Number(a.gen)||9999)-(Number(b.gen)||9999)||String(a.name).localeCompare(String(b.name),"ko");
-  const grp=(c)=>S.members.filter(m=>m.course===c).sort(sortM);
-  const names=list=>list.length?`<ul class="names">${list.map(m=>`<li>${esc(m.name)}${S.canEdit||m.userId&&m.userId===S.myId?` <button class="lnk" data-mem="${m.id}">수정</button>`:""}</li>`).join("")}</ul>`:`<p class="empty">${S.loaded?(S.membersOk?"등록된 구성원이 없습니다.":"명단을 준비 중입니다."):"불러오는 중…"}</p>`;
+/* Members: 지도교수 / 박사 / 박사수료 / 재학생 — 각각 한 페이지 */
+function memberTabs(k){return `<nav class="subnav" aria-label="Members 하위 메뉴">${Object.keys(SUB).map(x=>`<a href="#${x}"${x===k?' aria-current="page"':""}>${SUB[x][1]}</a>`).join("")}</nav>`}
+const splitLine=x=>{const i=x.indexOf("|");return i<0?["",x.trim()]:[x.slice(0,i).trim(),x.slice(i+1).trim()]};
+function renderProfessor(){
+  const el=$("#v-members");const P=pageData("professor",PROF_DEFAULT);const fields=lines(P.fields);
+  const info=[["소속",esc(P.aff)],["연구실",esc(P.office)],["전화",esc(P.phone)],["이메일",P.email?`<a href="mailto:${esc(P.email)}">${esc(P.email)}</a>`:""]].filter(x=>x[1]);
+  const secs=PROF_SECTIONS.map(([k,ko,en])=>{const L=lines(P[k]);if(!L.length)return"";
+    return `<section class="cv"><h3>${ko} <small>${en}</small></h3><ul class="tl">${L.map(x=>{const [d,t]=splitLine(x);return `<li><span class="tl-d">${esc(d)}</span><span class="tl-t">${esc(t)}</span></li>`}).join("")}</ul></section>`}).join("");
+  el.innerHTML=pageHead("Members","구성원","",adminBtn("ed-prof","지도교수 정보 수정"))+memberTabs("members")+
+  `<article class="prof"><img class="prof-ph" src="${esc(P.photo||PROF_DEFAULT.photo)}" alt="${esc(P.name)} 교수">
+    <div class="prof-b"><div class="prof-role">Advisor · 지도교수</div><h2>${esc(P.name)} <small>${esc(P.title)}</small></h2>
+    <dl class="pinfo">${info.map(([k,v])=>`<div><dt>${k}</dt><dd>${v}</dd></div>`).join("")}</dl>
+    ${fields.length?`<div class="pfield"><span class="pf-l">연구 분야</span><div class="chips">${fields.map(f=>`<span>${esc(f)}</span>`).join("")}</div></div>`:""}
+    ${url(P.scholar)?`<a class="btn ghost sm" href="${esc(P.scholar)}" target="_blank" rel="noopener">Google Scholar ↗</a>`:""}</div></article>
+  <div class="cvs">${secs}</div>`;
+  bind("ed-prof",editProfessor);
+}
+const GROUPS={phd:["박사","박사","Ph.D.","박사학위를 취득한 구성원입니다."],abd:["박사수료","박사수료","Ph.D. Candidates","박사과정을 수료한 구성원입니다."],students:["박사과정","재학생","Ph.D. Students","박사과정에 재학 중인 구성원입니다."]};
+function renderGroup(k){
+  const [course,ko,en,desc]=GROUPS[k];const el=$("#v-"+k);
+  const list=S.members.filter(m=>m.course===course).sort(k==="phd"
+    ?(a,b)=>(Number(b.gradYear)||0)-(Number(a.gradYear)||0)||String(a.name).localeCompare(String(b.name),"ko")
+    :(a,b)=>(Number(a.gen)||9999)-(Number(b.gen)||9999)||String(a.name).localeCompare(String(b.name),"ko"));
+  const ed=m=>S.canEdit||m.userId&&m.userId===S.myId?` <button class="lnk" data-mem="${m.id}">수정</button>`:"";
+  const inner=!S.loaded?loading():!list.length?`<p class="empty">${S.membersOk?"등록된 구성원이 없습니다.":"명단을 준비 중입니다."}</p>`
+    :`<ul class="people">${list.map(m=>`<li><div class="pp-n">${esc(m.name)}${ed(m)}</div>${k==="phd"?`<div class="pp-m">${[m.gradYear&&m.gradYear+" 학위 취득",m.degree||"부동산학 박사"].filter(Boolean).map(esc).join(" · ")}</div>${m.org?`<div class="pp-o">${esc(m.org)}</div>`:""}`:""}</li>`).join("")}</ul>`;
   let btns=adminBtn("m-add","구성원 추가");
   if(S.session&&!myMember())btns+=`<button class="btn sm ghost" id="m-join">명단에 내 정보 등록</button>`;
-  el.innerHTML=pageHead("Members","구성원","",btns)+prof+
-    `<div class="grp"><h3>재학생 <small>Ph.D. Students</small></h3>${names(grp("박사과정"))}</div>
-     <div class="grp"><h3>수료생 <small>Ph.D. Candidates</small></h3>${names(grp("박사수료"))}</div>`+(S.canEdit?adminMembers():"");
-  bind("ed-prof",editProfessor);bind("m-add",()=>editMember({},false));bind("m-join",()=>editMember({},true));
+  el.innerHTML=pageHead("Members","구성원","",btns)+memberTabs(k)+`<div class="grp-h"><h2>${ko} <small>${en}</small></h2><p>${desc}${S.loaded&&list.length?` (${list.length}명)`:""}</p></div>`+inner+(S.canEdit&&k==="students"?adminMembers():"");
+  bind("m-add",()=>editMember({course},false));bind("m-join",()=>editMember({course},true));
   bindMemberButtons(el);
 }
 function bindMemberButtons(el){
@@ -493,17 +514,19 @@ const ta=(k,label,val,hint)=>`<label for="pg-${k}">${label}${hint?`<span class="
 const ti=(k,label,val,type)=>`<label for="pg-${k}">${label}<input id="pg-${k}" name="${k}" type="${type||"text"}" value="${esc(val||"")}"></label>`;
 function editProfessor(){
   const P=pageData("professor",PROF_DEFAULT);
-  const m=pageForm("지도교수 정보 수정",`
+  pageForm("지도교수 정보 수정",`
     <div class="row2">${ti("name","성명",P.name)}${ti("title","직함",P.title)}</div>
     ${ti("aff","소속",P.aff)}
-    ${ta("fields","연구 분야",P.fields,"한 줄에 하나씩")}
-    ${ta("edu","학력",P.edu,"한 줄에 하나씩 (예: 상명대학교 부동산학 박사)")}
-    ${ta("bio","약력",P.bio,"한 줄에 하나씩")}
+    <div class="row2">${ti("office","연구실",P.office)}${ti("phone","전화",P.phone)}</div>
     <div class="row2">${ti("email","이메일",P.email,"email")}${ti("scholar","Google Scholar 주소",P.scholar,"url")}</div>
+    ${ta("fields","연구 분야",P.fields,"한 줄에 하나씩")}
+    <p class="hint">아래 항목은 한 줄에 하나씩, <b>기간 | 내용</b> 형식으로 적어 주세요. 예) 2012.08 | 중앙대학교 도시계획부동산학과 박사</p>
+    ${PROF_SECTIONS.map(([k,ko])=>ta(k,ko,P[k])).join("")}
     <label for="pg-photo">사진 바꾸기 (선택)<input id="pg-photo" name="photo" type="file" accept="image/*"></label>`,
     async(fd,b)=>{const g=k=>(fd.get(k)||"").toString().trim();let photo=P.photo;const f=fd.get("photo");
       if(f&&f.size){b.textContent="사진 올리는 중…";photo=(await uploadPhoto(f)).url}
-      return {name:g("name"),title:g("title"),aff:g("aff"),fields:lines(g("fields")),edu:lines(g("edu")),bio:lines(g("bio")),email:g("email"),scholar:g("scholar"),photo}},"professor");
+      const d={name:g("name"),title:g("title"),aff:g("aff"),office:g("office"),phone:g("phone"),email:g("email"),scholar:g("scholar"),fields:lines(g("fields")),photo};
+      PROF_SECTIONS.forEach(([k])=>d[k]=lines(g(k)));return d},"professor");
 }
 function editAdmissions(){
   const A=pageData("admissions",ADM_DEFAULT);

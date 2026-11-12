@@ -242,3 +242,35 @@ td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 .pop-f button{background:none;border:0;font-size:13px;color:var(--muted);padding:10px 14px;cursor:pointer;min-height:42px}
 .pop-f button:hover:not(:disabled){color:var(--ink)}
 .pop .grip{position:absolute;right:0;bottom:0;width:22px;height:22px;cursor:nwse-resize;touch-action:none;background:linear-gradient(135deg,transparent 52%,var(--gold) 52%)}
+
+/* ---------- Members 하위 페이지 · 지도교수 이력 ---------- */
+.subnav{display:flex;gap:4px;flex-wrap:wrap;margin:-16px 0 40px;border-bottom:1px solid var(--line)}
+.subnav a{padding:10px 16px;font-size:15px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
+.subnav a:hover{text-decoration:none;color:var(--navy-2)}
+.subnav a[aria-current="page"]{color:var(--navy-2);border-bottom-color:var(--navy-2)}
+@media (max-width:560px){.subnav a{padding:8px 10px;font-size:14px}}
+.pinfo{margin:14px 0 18px;display:grid;gap:6px}
+.pinfo div{display:grid;grid-template-columns:64px minmax(0,1fr);gap:12px}
+.pinfo dt{font-size:14px;font-weight:700;color:var(--navy)}
+.pinfo dd{margin:0;font-size:15px}
+.pfield{display:grid;grid-template-columns:64px minmax(0,1fr);gap:12px;align-items:start;margin-bottom:20px}
+.pf-l{font-size:14px;font-weight:700;color:var(--navy);padding-top:2px}
+@media (max-width:560px){.pfield{grid-template-columns:1fr;gap:6px}}
+.cvs{display:grid;gap:40px}
+.cv h3{margin:0 0 12px;font-size:19px;font-weight:700;color:var(--navy);padding-bottom:10px;border-bottom:2px solid var(--navy)}
+.cv h3 small{font-size:13px;color:var(--faint);font-weight:500;margin-left:6px;letter-spacing:.02em}
+.tl{list-style:none;margin:0;padding:0}
+.tl li{display:grid;grid-template-columns:170px minmax(0,1fr);gap:16px;padding:11px 0;border-bottom:1px solid var(--line);font-size:15.5px}
+.tl-d{color:var(--gold);font-weight:600;font-variant-numeric:tabular-nums;font-size:14.5px}
+@media (max-width:560px){.tl li{grid-template-columns:1fr;gap:2px}}
+.grp-h{margin-bottom:22px}
+.grp-h h2{margin:0;font-size:24px;font-weight:800;color:var(--navy)}
+.grp-h h2 small{font-size:14px;color:var(--faint);font-weight:500;margin-left:6px}
+.grp-h p{margin:6px 0 0;color:var(--muted);font-size:15px}
+.people{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.people li{padding:16px 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.pp-n{font-size:17px;font-weight:700;color:var(--ink)}
+.pp-n .lnk{font-size:12px;margin-left:4px}
+.pp-m{font-size:13.5px;color:var(--gold);font-weight:600;margin-top:4px}
+.pp-o{font-size:14px;color:var(--muted);margin-top:2px}
+.prof{padding-bottom:40px;margin-bottom:40px}
