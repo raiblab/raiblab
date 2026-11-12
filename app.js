@@ -18,7 +18,7 @@ const NEED_SQL="데이터베이스 업데이트가 아직 안 되었습니다. S
 
 /* ---------- 메뉴 ---------- */
 const MENU=[["members","Members"],["alumni","Alumni"],["publications","Publications"],["projects","Projects"],["news","News"],["community","Community"],["admissions","Admissions"]];
-const SUB={members:["members","지도교수"],abd:["members","박사수료"],students:["members","재학생"]};
+const SUB={members:["members","지도교수"],students:["members","재학생"],abd:["members","수료생"]};
 const VIEWS=["home","abd","students"].concat(MENU.map(m=>m[0]));
 /* 예전 주소(#research 등)로 들어와도 맞는 메뉴로 */
 const OLD={phd:"alumni",research:"publications",officers:"members",conference:"news",golf:"community",edu:"community",greeting:"home",chair:"home",intro:"home"};
@@ -173,7 +173,7 @@ function renderProfessor(){
   const info=[["소속",esc(P.aff)],["연구실",esc(P.office)],["전화",esc(P.phone)],["이메일",P.email?`<a href="mailto:${esc(P.email)}">${esc(P.email)}</a>`:""]].filter(x=>x[1]);
   const secs=PROF_SECTIONS.map(([k,ko,en])=>{const L=lines(P[k]);if(!L.length)return"";
     return `<section class="cv"><h3>${ko} <small>${en}</small></h3><ul class="tl">${L.map(x=>{const [d,t]=splitLine(x);return `<li><span class="tl-d">${esc(d)}</span><span class="tl-t">${esc(t)}</span></li>`}).join("")}</ul></section>`}).join("");
-  el.innerHTML=pageHead("Members","구성원","",adminBtn("ed-prof","지도교수 정보 수정"))+memberTabs("members")+
+  el.innerHTML=pageHead("Members","","",adminBtn("ed-prof","지도교수 정보 수정"))+memberTabs("members")+
   `<article class="prof"><img class="prof-ph" src="${esc(P.photo||PROF_DEFAULT.photo)}" alt="${esc(P.name)} 교수">
     <div class="prof-b"><div class="prof-role">Advisor · 지도교수</div><h2>${esc(P.name)} <small>${esc(P.title)}</small></h2>
     <dl class="pinfo">${info.map(([k,v])=>`<div><dt>${k}</dt><dd>${v}</dd></div>`).join("")}</dl>
@@ -182,7 +182,7 @@ function renderProfessor(){
   <div class="cvs">${secs}</div>`;
   bind("ed-prof",editProfessor);
 }
-const GROUPS={abd:["박사수료","박사수료","Ph.D. Candidates","박사과정을 수료한 구성원입니다."],students:["박사과정","재학생","Ph.D. Students","박사과정에 재학 중인 구성원입니다."]};
+const GROUPS={abd:["박사수료","수료생","Ph.D. Candidates","박사과정을 수료한 구성원입니다."],students:["박사과정","재학생","Ph.D. Students","박사과정에 재학 중인 구성원입니다."]};
 function renderGroup(k){
   const [course,ko,en,desc]=GROUPS[k];const el=$("#v-"+k);
   const list=S.members.filter(m=>m.course===course).sort(k==="phd"
@@ -193,7 +193,7 @@ function renderGroup(k){
     :`<ul class="people">${list.map(m=>`<li><div class="pp-n">${esc(m.name)}${ed(m)}</div>${k==="phd"?`<div class="pp-m">${[m.gradYear&&m.gradYear+" 학위 취득",m.degree||"부동산학 박사"].filter(Boolean).map(esc).join(" · ")}</div>${m.org?`<div class="pp-o">${esc(m.org)}</div>`:""}`:""}</li>`).join("")}</ul>`;
   let btns=adminBtn("m-add","구성원 추가");
   if(S.session&&!myMember())btns+=`<button class="btn sm ghost" id="m-join">명단에 내 정보 등록</button>`;
-  el.innerHTML=pageHead("Members","구성원","",btns)+memberTabs(k)+`<div class="grp-h"><h2>${ko} <small>${en}</small></h2><p>${desc}${S.loaded&&list.length?` (${list.length}명)`:""}</p></div>`+inner+(S.canEdit&&k==="students"?adminMembers():"");
+  el.innerHTML=pageHead("Members","","",btns)+memberTabs(k)+`<div class="grp-h"><h2>${ko} <small>${en}</small></h2><p>${desc}${S.loaded&&list.length?` (${list.length}명)`:""}</p></div>`+inner+(S.canEdit&&k==="students"?adminMembers():"");
   bind("m-add",()=>editMember({course},false));bind("m-join",()=>editMember({course},true));
   bindMemberButtons(el);
 }
