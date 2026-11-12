@@ -20,7 +20,7 @@ const NEED_SQL="데이터베이스 업데이트가 아직 안 되었습니다. S
 const MENU=[["members","Members"],["alumni","Alumni"],["publications","Publications"],["projects","Projects"],["news","News"],["community","Community"],["admissions","Admissions"]];
 const SUB={members:["members","지도교수"],students:["members","재학생"],abd:["members","수료생"]};
 /* 위쪽 메뉴에 마우스를 올리면 아래로 펼쳐지는 하위 메뉴 */
-const DROP={members:Object.keys(SUB).map(k=>[k,SUB[k][1]]),community:[["c-assoc","원우회"],["c-golf","골프회"],["c-act","교류 활동"]]};
+const DROP={members:Object.keys(SUB).map(k=>[k,SUB[k][1]]),community:[["c-assoc","연구실 임원단"],["c-golf","골프회"],["c-act","교류 활동"]]};
 const VIEWS=["home","abd","students"].concat(MENU.map(m=>m[0]));
 /* 예전 주소(#research 등)로 들어와도 맞는 메뉴로 */
 const OLD={phd:"alumni",research:"publications",officers:"members",conference:"news",golf:"community",edu:"community",greeting:"home",chair:"home",intro:"home"};
@@ -314,7 +314,7 @@ function renderNews(){
   bind("w-news",()=>editPost("news"));
 }
 
-/* Community: 원우회 · 골프회 · 교류 활동 */
+/* Community: 연구실 임원단 · 골프회 · 교류 활동 */
 const ROLES=["회장","부회장","총무","감사","이사"];
 const roleRank=r=>{const i=ROLES.indexOf(String(r||"").trim());return i<0?9:i};
 function officerBlock(sec){
@@ -325,8 +325,8 @@ function officerBlock(sec){
     return `<li><b class="tm">${esc(t)}</b><span class="tm-r">${rows.map(r=>`<span class="ofc"><span class="role">${esc(r.role)}</span> <span class="nm">${esc(r.name)}</span>${S.canEdit?`<button class="lnk" data-off="${r.id}">수정</button>`:""}</span>`).join("")}</span>${rows[0].period?`<span class="tm-p">임기 ${esc(rows[0].period)}</span>`:""}</li>`}).join("")+`</ul>`}
 function renderCommunity(){
   const el=$("#v-community");const G=pageData("golf",GOLF_DEFAULT);
-  el.innerHTML=pageHead("Community","커뮤니티","",`<nav class="jump"><a href="#c-assoc">원우회</a><a href="#c-golf">골프회</a><a href="#c-act">교류 활동</a></nav>`)+
-  `<section class="csec" id="c-assoc"><div class="sec-h"><h2>원우회 <small>임원단</small></h2>${adminBtn("o-add1","임원 추가")}</div>${officerBlock("임원")}</section>
+  el.innerHTML=pageHead("Community","커뮤니티","",`<nav class="jump"><a href="#c-assoc">연구실 임원단</a><a href="#c-golf">골프회</a><a href="#c-act">교류 활동</a></nav>`)+
+  `<section class="csec" id="c-assoc"><div class="sec-h"><h2>연구실 임원단</h2>${adminBtn("o-add1","임원 추가")}</div>${officerBlock("임원")}</section>
    <section class="csec" id="c-golf"><div class="sec-h"><h2>골프회</h2><span class="tools">${adminBtn("o-add2","운영진 추가")}${adminBtn("ed-golf","모임 안내 수정")}${canWrite()?`<button class="btn sm ghost" id="w-golf">사진 올리기</button>`:""}</span></div>
      <div class="golf"><div><h4>운영진</h4>${officerBlock("골프 임원")}</div><div><h4>모임 안내</h4>${G.info?`<p class="info">${esc(G.info)}</p>`:`<p class="empty">모임 안내를 준비 중입니다.</p>`}</div></div>
      ${S.loaded?cards(postsOf("golf").sort(byDate),"등록된 사진이 없습니다."):loading()}</section>
@@ -600,7 +600,7 @@ function editGolf(){
   pageForm("골프회 모임 안내 수정",ta("info","모임 안내",G.info,"예: 매월 셋째 주 목요일 정기 라운딩, 참가 신청은 총무에게"),async fd=>({info:(fd.get("info")||"").toString().trim()}),"golf");
 }
 function editOfficer(o){
-  o=o||{};const SECS=[["임원","원우회 임원단"],["골프 임원","골프회 운영진"]];
+  o=o||{};const SECS=[["임원","연구실 임원단"],["골프 임원","골프회 운영진"]];
   const m=modal(`<h2>${o.id?"명단 수정":"명단 추가"}</h2><form class="form" id="of">
     <label for="o-section">구분<select id="o-section" name="section">${SECS.map(([x,l])=>`<option value="${x}"${x===(o.section||"임원")?" selected":""}>${l}</option>`).join("")}</select></label>
     <div class="row2"><label for="o-term">기수<input id="o-term" name="term" placeholder="예: 제1기" value="${esc(o.term||"")}" required></label><label for="o-period">임기<input id="o-period" name="period" placeholder="예: 2025.01 – 2026.12" value="${esc(o.period||"")}"></label></div>
