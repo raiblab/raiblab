@@ -315,3 +315,4 @@ td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 .hlogin{flex:none;background:none;border:1px solid var(--line);border-radius:20px;padding:4px 12px;font-size:13px;color:var(--muted);cursor:pointer}
 .hlogin:hover{border-color:var(--navy-2);color:var(--navy-2)}
 @media (max-width:900px){.bar{position:relative}.navr{display:block}.hlogin{position:absolute;top:16px;right:max(20px,env(safe-area-inset-right,0px));padding:3px 10px;font-size:12px}}
+.al-y{font-size:13.5px;color:var(--muted);margin-top:1px;font-variant-numeric:tabular-nums}
