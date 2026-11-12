@@ -140,7 +140,7 @@ function pubItem(p){
 /* 소식·사진 카드 */
 function card(p){const ph=p.photos[0];
   return `<button class="card" data-open="${p.id}"><div class="cph${ph?"":" none"}"${ph?` style="background-image:url('${esc(ph.url)}')"`:""}>${ph?(p.photos.length>1?`<span class="n">+${p.photos.length-1}</span>`:""):"<span>RAIB Lab</span>"}</div><div class="cb"><div class="cm">${p.kind?`<span class="tag">${esc(p.kind)}</span>`:""}<time>${fmt(p.date||p.createdAt)}</time></div><div class="ct">${esc(p.title)}</div>${p.body?`<div class="cx">${esc(excerpt(p.body,80))}</div>`:""}</div></button>`}
-function cards(list,emptyMsg){return list.length?`<div class="cards">${list.map(card).join("")}</div>`:`<p class="empty">${emptyMsg}</p>`}
+function cards(list,emptyMsg,cls){return list.length?`<div class="cards${cls?" "+cls:""}">${list.map(card).join("")}</div>`:`<p class="empty">${emptyMsg}</p>`}
 
 /* ---------- 렌더 ---------- */
 function render(){
@@ -255,7 +255,7 @@ function renderNews(){
   const list=all.filter(p=>!f||p.kind===f);
   el.innerHTML=pageHead("News","소식","학술대회 발표, 논문 게재, 수상, 학위 취득 등 연구실 소식입니다.",canWrite()?`<button class="btn sm" id="w-news">소식 올리기</button>`:"")+
     (kinds.length>1?`<div class="ftabs">${[""].concat(kinds).map(k=>`<button type="button" data-nf="${esc(k)}"${k===f?' aria-pressed="true"':""}>${k?esc(k):"전체"}</button>`).join("")}</div>`:"")+
-    (!S.loaded?loading():cards(list,"등록된 소식이 없습니다."));
+    (!S.loaded?loading():cards(list,"등록된 소식이 없습니다.","sm"));
   el.querySelectorAll("[data-nf]").forEach(b=>b.onclick=()=>{S.nf=b.dataset.nf;renderNews()});
   bind("w-news",()=>editPost("news"));
 }

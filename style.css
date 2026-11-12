@@ -298,3 +298,14 @@ td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 .al-d{font-size:13.5px;color:var(--gold);font-weight:600;margin-top:2px}
 .al-o{font-size:14px;color:var(--muted);margin-top:2px}
 .al-f{font-size:13px;color:var(--faint);margin-top:2px}
+
+/* News: 사진을 작게 왼쪽에, 글은 오른쪽 */
+.cards.sm{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.cards.sm .card{flex-direction:row;align-items:stretch}
+.cards.sm .card:hover{transform:none}
+.cards.sm .cph{flex:none;width:160px;aspect-ratio:4/3;height:auto;align-self:flex-start;margin:14px 0 14px 14px;border-radius:6px}
+.cards.sm .cph.none span{font-size:13px}
+.cards.sm .cb{flex:1;min-width:0;padding:14px 16px;align-content:start}
+.cards.sm .cx{align-self:start}
+@media (max-width:760px){.cards.sm{grid-template-columns:1fr}}
+@media (max-width:420px){.cards.sm .cph{width:110px}}
