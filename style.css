@@ -285,15 +285,16 @@ td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 .nl-t{font-size:16px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media (max-width:560px){.nlist a{flex-wrap:wrap;gap:4px 10px}.nlist time{width:auto}.nl-t{flex-basis:100%;white-space:normal}}
 
-/* Alumni: 사진 카드 */
-.alums{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:28px 22px}
-@media (max-width:900px){.alums{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media (max-width:620px){.alums{grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 14px}}
-.al-ph{display:block;width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:10px;background:var(--soft);border:1px solid var(--line)}
-.al-ph.none{display:grid;place-items:center;font-size:44px;font-weight:800;color:#c3ccd8}
-.al-b{padding:12px 2px 0}
-.al-n{font-size:18px;font-weight:700}
+/* Alumni: 사진 카드 (사진은 작게, 옆에 이름·학위·소속) */
+.alums{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media (max-width:900px){.alums{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.alums{grid-template-columns:1fr}}
+.alums li{display:flex;gap:16px;align-items:center;padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.al-ph{flex:none;display:block;width:90px;aspect-ratio:3/4;object-fit:cover;border-radius:8px;background:var(--soft)}
+.al-ph.none{display:grid;place-items:center;font-size:28px;font-weight:800;color:#c3ccd8}
+.al-b{min-width:0}
+.al-n{font-size:17px;font-weight:700}
 .al-n .lnk{font-size:12px;margin-left:4px}
-.al-d{font-size:14px;color:var(--gold);font-weight:600;margin-top:2px}
+.al-d{font-size:13.5px;color:var(--gold);font-weight:600;margin-top:2px}
 .al-o{font-size:14px;color:var(--muted);margin-top:2px}
 .al-f{font-size:13px;color:var(--faint);margin-top:2px}

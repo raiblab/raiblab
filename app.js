@@ -120,7 +120,7 @@ window.addEventListener("popstate",()=>go((location.hash||"").slice(1)));
 function postsOf(...b){return S.posts.filter(p=>b.includes(p.board))}
 const byDate=(a,c)=>String(c.date||c.createdAt||"").localeCompare(String(a.date||a.createdAt||""));
 function loading(){return `<p class="empty">불러오는 중…</p>`}
-function pageHead(en,ko,desc,btns){return `<div class="ph"><div><h1>${en}</h1><p class="ph-ko">${ko}</p>${desc?`<p class="ph-d">${desc}</p>`:""}</div>${btns?`<div class="tools">${btns}</div>`:""}</div>`}
+function pageHead(en,ko,desc,btns){return `<div class="ph"><div><h1>${en}</h1>${ko?`<p class="ph-ko">${ko}</p>`:""}${desc?`<p class="ph-d">${desc}</p>`:""}</div>${btns?`<div class="tools">${btns}</div>`:""}</div>`}
 const adminBtn=(id,label)=>S.canEdit?`<button class="btn sm ghost" id="${id}">${label}</button>`:"";
 function bind(id,fn){const el=document.getElementById(id);el&&(el.onclick=fn)}
 function excerpt(s,n){s=String(s||"").replace(/\s+/g," ").trim();return s.length>n?s.slice(0,n).trim()+"…":s}
@@ -219,7 +219,7 @@ function renderAlumni(){
   const list=S.members.filter(m=>m.course==="박사").sort((a,b)=>(Number(b.gradYear)||0)-(Number(a.gradYear)||0)||String(a.name).localeCompare(String(b.name),"ko"));
   const inner=!S.loaded?loading():!list.length?`<p class="empty">${S.membersOk?"등록된 졸업생이 없습니다.":"명단을 준비 중입니다."}</p>`
     :`<ul class="alums">${list.map(m=>`<li>${avatar(m)}<div class="al-b"><div class="al-n">${esc(m.name)}${S.canEdit||m.userId&&m.userId===S.myId?` <button class="lnk" data-mem="${m.id}">수정</button>`:""}</div><div class="al-d">${esc(m.degree||"부동산학 박사")}${m.gradYear?` · ${esc(m.gradYear)}`:""}</div>${m.org?`<div class="al-o">${esc(m.org)}</div>`:""}${m.field?`<div class="al-f">${esc(m.field)}</div>`:""}</div></li>`).join("")}</ul>`;
-  el.innerHTML=pageHead("Alumni","박사 졸업생","레이브랩에서 박사학위를 취득한 졸업생입니다."+(S.loaded&&list.length?` (${list.length}명)`:""),adminBtn("m-add","졸업생 추가"))+inner;
+  el.innerHTML=pageHead("Alumni","","레이브랩에서 박사학위를 취득한 졸업생입니다."+(S.loaded&&list.length?` (${list.length}명)`:""),adminBtn("m-add","졸업생 추가"))+inner;
   bind("m-add",()=>editMember({course:"박사"},false));bindMemberButtons(el);
 }
 
