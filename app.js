@@ -32,11 +32,11 @@ const PROF_DEFAULT={name:"전해정",title:"교수",aff:"상명대학교 대학�
   office:"상명대학교 중앙교수회관 S222",phone:"02-2287-6140",email:"hjchun0719@smu.ac.kr",
   scholar:"https://scholar.google.com/citations?hl=ko&user=MlYd81sAAAAJ",
   edu:["2025.08 | 연세대학교 정보대학원 박사 (AI·빅데이터)","2012.08 | 중앙대학교 도시계획부동산학과 박사 (부동산)","2008.02 | 연세대학교 경제학과 석사","2003.08 | 연세대학교 생활과학부 학사"],
-  career:["현재 | 상명대학교 교수","2026.01 – 2027.12 | 한국부동산원 『부동산분석』 편집위원","2020.05 – 2028.02 | 한국부동산원 부동산연구원 자문위원","2014.04 – 2019.02 | 성결대학교 조교수"],
-  society:["2019.06 – 2027.02 | 한국부동산학회 부회장·이사","2021.01 – 2027.02 | 한국도시행정학회 상임이사","2024.01 – 2027.02 | 한국감정평가학회 이사","2024.01 – 2027.02 | 한국지역개발학회 이사","2026.01 – 2027.12 | 한국주거환경학회 이사"],
+  /* 약력 = 경력 + 학회 활동 (시작 시기 최신순, '현재'가 맨 위) */
+  career:["현재 | 상명대학교 교수","2026.01 – 2027.12 | 한국부동산원 『부동산분석』 편집위원","2026.01 – 2027.12 | 한국주거환경학회 이사","2024.01 – 2027.02 | 한국감정평가학회 이사","2024.01 – 2027.02 | 한국지역개발학회 이사","2021.01 – 2027.02 | 한국도시행정학회 상임이사","2020.05 – 2028.02 | 한국부동산원 부동산연구원 자문위원","2019.06 – 2027.02 | 한국부동산학회 부회장·이사","2014.04 – 2019.02 | 성결대학교 조교수"],
   books:["2024.02 | 『프롭테크와 부동산산업』, 부연사"],
   awards:["2025.08 | 연세대학교 정보대학원 우수논문상","2024.05 | 한국콘텐츠학회 우수논문 학술상","2022.05 | 한국부동산학회 전국부동산학술발표대회 학술발표상 (2022 전반기)","2019.12 | 한국부동산학회 전국부동산학술발표대회 학술발표상 (2019 후반기)","2018.03 | Marquis Who's Who 세계인명사전 등재","2011.12 | 한국주택학회 창립 20주년 기념 정기학술대회 우수논문상"]};
-const PROF_SECTIONS=[["edu","학력","Education"],["career","경력","Career"],["society","학회 활동","Academic Service"],["books","저서","Books"],["awards","수상","Awards"]];
+const PROF_SECTIONS=[["edu","학력","Education"],["career","약력","Career"],["books","저서","Books"],["awards","수상","Awards"]];
 const GRAD_GUIDE="https://www.smu.ac.kr/grad/admission/guideline.do";
 const GRAD_NOTICE="https://www.smu.ac.kr/grad/admission/notice.do";
 const ADM_DEFAULT={
@@ -72,7 +72,12 @@ const toOfficer=r=>({id:r.id,section:r.section||"임원",term:r.term||"",period:
 const toMember=r=>({id:r.id,userId:r.user_id||"",name:r.name||"",phone:r.phone||"",gen:r.gen||"",course:r.course||"",year:r.year||"",email:r.email||"",org:r.org||"",field:r.field||"",scholar:r.scholar||"",gradYear:r.grad_year||"",gradDate:r.grad_date||"",degree:r.degree||"",photo:r.photo||"",joinedAt:r.joined_at});
 const pageData=(key,def)=>{const d=Object.assign({},def),st=((S.pages[key]||{}).data)||{};
   Object.keys(st).forEach(k=>{const v=st[k];if(v==null||v===""||(Array.isArray(v)&&!v.length))return;d[k]=v});
-  if(key==="professor"&&lines(st.bio).length&&!lines(st.career).length)d.career=st.bio;return d};
+  if(key==="professor"&&lines(st.bio).length&&!lines(st.career).length)d.career=st.bio;
+  /* 예전에 '학회 활동'을 따로 저장해 둔 경우 약력에 합침 */
+  if(key==="professor"&&lines(st.society).length){const L=lines(d.career).concat(lines(st.society).filter(x=>!lines(d.career).includes(x)));
+    const k=x=>{const t=x.split("|")[0];return /현재/.test(t)&&!/\d/.test(t)?"9999":(t.match(/\d{4}\.?\d{0,2}/)||["0"])[0]};
+    d.career=L.sort((a,b)=>k(b).localeCompare(k(a)))}
+  if(key==="professor")delete d.society;return d};
 
 async function loadAll(){
   if(!sb){S.loaded=true;render();return}
