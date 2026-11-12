@@ -191,15 +191,24 @@ function renderGroup(k){
   const list=S.members.filter(m=>m.course===course).sort(k==="phd"
     ?(a,b)=>(Number(b.gradYear)||0)-(Number(a.gradYear)||0)||String(a.name).localeCompare(String(b.name),"ko")
     :(a,b)=>genOf(a)-genOf(b)||String(a.name).localeCompare(String(b.name),"ko"));
-  const ed=m=>S.canEdit?` <button class="lnk" data-mem="${m.id}">수정</button>`:"";
+  const ed=m=>S.canEdit?`<span class="mact"><button class="lnk" data-mem="${m.id}">수정</button><button class="lnk danger" data-mdel="${m.id}">삭제</button></span>`:"";
   const inner=!S.loaded?loading():!list.length?`<p class="empty">${S.membersOk?"등록된 구성원이 없습니다.":"명단을 준비 중입니다."}</p>`
     :`<ul class="people">${list.map(m=>`<li><div class="pp-n">${esc(m.name)}${ed(m)}</div>${k==="phd"?`<div class="pp-m">${[m.gradYear&&m.gradYear+" 학위 취득",m.degree||"부동산학 박사"].filter(Boolean).map(esc).join(" · ")}</div>${m.org?`<div class="pp-o">${esc(m.org)}</div>`:""}`:""}</li>`).join("")}</ul>`;
-  let btns=adminBtn("m-add","구성원 추가");
+  let btns=adminBtn("m-add",{students:"재학생 추가",abd:"수료생 추가"}[k]||"구성원 추가");
   el.innerHTML=pageHead("Members","","",btns)+memberTabs(k)+`<div class="grp-h"><h2>${ko} <small>${en}</small></h2></div>`+inner;
   bind("m-add",()=>editMember({course},false));
   bindMemberButtons(el);
 }
+/* 관리자: 명단에서 삭제 */
+function delMember(m){
+  const md=modal(`<h2>명단에서 삭제</h2><div class="content"><b>${esc(m.name)}</b> 님을 명단에서 삭제할까요? 되돌릴 수 없습니다.<br>수료나 졸업으로 옮기는 경우에는 삭제하지 말고 ‘수정’에서 구분만 바꿔 주세요.</div><div class="err" id="derr"></div>
+    <div class="actions"><button class="btn ghost" id="dc">취소</button><button class="btn danger" id="dy">삭제</button></div>`);
+  md.querySelector("#dc").onclick=close;
+  md.querySelector("#dy").onclick=async()=>{const b=$("#dy");b.disabled=true;
+    try{must(await sb.from("members").delete().eq("id",m.id));close();toast("삭제했습니다");loadAll()}catch(e){b.disabled=false;$("#derr").textContent="삭제하지 못했습니다. "+errMsg(e)}};
+}
 function bindMemberButtons(el){
+  el.querySelectorAll("[data-mdel]").forEach(b=>b.onclick=()=>delMember(S.members.find(x=>x.id===b.dataset.mdel)));
   el.querySelectorAll("[data-mem]").forEach(b=>b.onclick=()=>{const m=S.members.find(x=>x.id===b.dataset.mem);editMember(m,m.userId===S.myId)});
   el.querySelectorAll("[data-out]").forEach(b=>b.onclick=()=>{const m=S.members.find(x=>x.id===b.dataset.out);withdraw(m.name,m.userId,m.id)});
   el.querySelectorAll("[data-uout]").forEach(b=>b.onclick=()=>{const u=S.users.find(x=>x.id===b.dataset.uout);withdraw(u.email,u.id,null)});
@@ -228,7 +237,7 @@ function renderAlumni(){
   /* 기수 순서 (기수가 빠른 사람이 먼저, 기수 없으면 맨 뒤) */
   const list=S.members.filter(m=>m.course==="박사").sort((a,b)=>genOf(a)-genOf(b)||String(a.name).localeCompare(String(b.name),"ko"));
   const inner=!S.loaded?loading():!list.length?`<p class="empty">${S.membersOk?"등록된 졸업생이 없습니다.":"명단을 준비 중입니다."}</p>`
-    :`<ul class="alums">${list.map(m=>`<li>${avatar(m)}<div class="al-b"><div class="al-n">${esc(m.name)}${S.canEdit?` <button class="lnk" data-mem="${m.id}">수정</button>`:""}</div>${(()=>{const x=ALUMNI_INFO[m.name]||{};const grad=x.grad||m.gradYear,org=x.org||m.org;return `<div class="al-d">${esc(x.degree||m.degree||"부동산학 박사")}</div>${grad?`<div class="al-y">${esc(grad)} 학위취득</div>`:""}${org?`<div class="al-o">${esc(org)}</div>`:""}`})()}</div></li>`).join("")}</ul>`;
+    :`<ul class="alums">${list.map(m=>`<li>${avatar(m)}<div class="al-b"><div class="al-n">${esc(m.name)}${S.canEdit?`<span class="mact"><button class="lnk" data-mem="${m.id}">수정</button><button class="lnk danger" data-mdel="${m.id}">삭제</button></span>`:""}</div>${(()=>{const x=ALUMNI_INFO[m.name]||{};const grad=x.grad||m.gradYear,org=x.org||m.org;return `<div class="al-d">${esc(x.degree||m.degree||"부동산학 박사")}</div>${grad?`<div class="al-y">${esc(grad)} 학위취득</div>`:""}${org?`<div class="al-o">${esc(org)}</div>`:""}`})()}</div></li>`).join("")}</ul>`;
   el.innerHTML=pageHead("Alumni","","레이브랩에서 박사학위를 취득한 졸업생입니다."+(S.loaded&&list.length?` (${list.length}명)`:""),adminBtn("m-add","졸업생 추가"))+inner;
   bind("m-add",()=>editMember({course:"박사"},false));bindMemberButtons(el);
 }

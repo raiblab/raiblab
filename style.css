@@ -311,3 +311,4 @@ td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 @media (max-width:420px){.cards.sm .cph{width:110px}}
 
 .al-y{font-size:13.5px;color:var(--muted);margin-top:1px;font-variant-numeric:tabular-nums}
+.mact{display:inline-flex;gap:8px;margin-left:8px;vertical-align:1px}.mact .lnk{font-size:12px}
