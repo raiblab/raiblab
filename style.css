@@ -338,3 +338,6 @@ td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 .lnk.move{color:var(--navy-2);font-weight:700}
 .gen-n li.gen-all{font-size:13px;font-weight:600}
 .gen-n li.gen-all .lnk{font-size:13px;border:1px solid var(--line);border-radius:999px;padding:3px 10px}
+
+/* 입학 안내 문구: 입력한 줄바꿈 그대로 */
+.adm-intro{white-space:pre-line}

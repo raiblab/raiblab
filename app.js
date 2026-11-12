@@ -40,7 +40,7 @@ const PROF_SECTIONS=[["edu","학력","Education"],["career","약력","Career"],[
 const GRAD_GUIDE="https://www.smu.ac.kr/grad/admission/guideline.do";
 const GRAD_NOTICE="https://www.smu.ac.kr/grad/admission/notice.do";
 const ADM_DEFAULT={
-  intro:"레이브랩은 빅데이터와 인공지능으로 부동산시장과 주택시장을 연구하고 싶은 대학원생을 환영합니다. 데이터 분석 경험이 많지 않아도 괜찮습니다. 세미나와 공동연구를 통해 함께 배워 갑니다.",
+  intro:"레이브랩은 빅데이터와 인공지능으로 부동산시장과 주택시장을 연구하고 싶은 대학원생을 환영합니다.\n데이터 분석 경험이 많지 않아도 괜찮습니다.\n세미나와 공동연구를 통해 함께 배워 갑니다.",
   steps:["공식 모집요강에서 상명대학교 대학원 부동산학과 박사과정 모집 일정과 지원 자격을 확인합니다.","지원 전에 지도교수에게 이메일로 연구 관심 분야와 간단한 이력을 보내 상담을 요청합니다.","대학원 입학 전형(서류·면접)에 지원합니다.","입학 후 연구실 세미나와 공동연구에 참여합니다."],
   contactName:"",contactEmail:"",contactPhone:"",
   office:"상명대학교 대학원교학팀 02-2287-5030",guide:GRAD_GUIDE};
@@ -606,7 +606,7 @@ function editProfessor(){
 }
 function editAdmissions(){
   const A=pageData("admissions",ADM_DEFAULT);
-  pageForm("입학 안내 수정",`${ta("intro","안내 문구",A.intro)}${ta("steps","지원 절차",A.steps,"한 줄에 하나씩")}
+  pageForm("입학 안내 수정",`${ta("intro","안내 문구",A.intro,"엔터로 줄을 바꾸면 화면에서도 그대로 줄이 바뀝니다")}${ta("steps","지원 절차",A.steps,"한 줄에 하나씩")}
     <div class="row2">${ti("contactName","연구실 문의 담당 (선택)",A.contactName)}${ti("contactPhone","연락처 (선택)",A.contactPhone)}</div>
     ${ti("contactEmail","문의 이메일 (선택)",A.contactEmail,"email")}${ti("office","대학원 입학 문의",A.office)}${ti("guide","공식 모집요강 주소",A.guide,"url")}
     <p class="hint">지도교수 이메일은 ‘지도교수 정보’에 적힌 이메일이 자동으로 표시됩니다.</p>`,
