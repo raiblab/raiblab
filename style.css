@@ -27,20 +27,26 @@ img{max-width:100%}
 .brand span{display:grid;line-height:1.15}
 .brand b{font-size:18px;font-weight:800;letter-spacing:-.01em}
 .brand small{font-size:11px;color:var(--muted);font-weight:500;letter-spacing:.02em}
-.menu{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
-.menu::-webkit-scrollbar{display:none}
-.menu a{flex:none;padding:8px 12px;font-size:15px;font-weight:600;color:var(--ink);border-radius:6px;position:relative}
-.menu a:hover{text-decoration:none;color:var(--navy-2);background:var(--soft)}
-.menu a[aria-current="page"]{color:var(--navy-2)}
-.menu a[aria-current="page"]::after{content:"";position:absolute;left:12px;right:12px;bottom:2px;height:2px;background:var(--navy-2);border-radius:2px}
+.menu{display:flex;gap:2px}
+.mi{position:relative}
+.menu .mi>a{display:block;flex:none;padding:8px 12px;font-size:15px;font-weight:600;color:var(--ink);border-radius:6px;position:relative}
+.menu .mi>a:hover{text-decoration:none;color:var(--navy-2);background:var(--soft)}
+.menu .mi>a[aria-current="page"]{color:var(--navy-2)}
+.menu .mi>a[aria-current="page"]::after{content:"";position:absolute;left:12px;right:12px;bottom:2px;height:2px;background:var(--navy-2);border-radius:2px}
 @media (max-width:900px){
   .bar{flex-direction:column;align-items:stretch;gap:0;min-height:0;padding-top:12px}
   .brand{padding-bottom:6px}
   .menu{margin:0 -10px;padding:0 0 6px;flex-wrap:wrap;overflow:visible}
-  .menu a{font-size:14.5px;padding:6px 10px}
+  .menu .mi>a{font-size:14.5px;padding:6px 10px}
   main{padding-top:32px}
   .ph h1{font-size:32px}
 }
+/* 하위 메뉴 (마우스를 올리면 아래로 펼쳐짐 · 휴대폰은 각 화면 안의 탭으로 이동) */
+.dd{display:none;position:absolute;top:100%;left:0;z-index:30;min-width:150px;padding:6px;margin-top:2px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 28px rgba(10,44,77,.12)}
+.dd::before{content:"";position:absolute;left:0;right:0;top:-8px;height:8px}
+.dd a{display:block;padding:8px 12px;border-radius:6px;font-size:14.5px;font-weight:600;color:var(--ink);white-space:nowrap}
+.dd a:hover,.dd a:focus-visible{text-decoration:none;background:var(--soft);color:var(--navy-2)}
+@media (hover:hover){.mi.has-dd:hover .dd,.mi.has-dd:focus-within .dd{display:block}}
 .adminbar{background:var(--soft);border-bottom:1px solid var(--line);font-size:13px;color:var(--muted)}
 .adminbar .ab{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;padding-top:6px;padding-bottom:6px}
 .adminbar b{color:var(--navy)}
@@ -156,14 +162,16 @@ td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 .jump a{border:1px solid var(--line);border-radius:20px;padding:5px 14px;font-size:14px;font-weight:600;color:var(--ink)}
 .jump a:hover{border-color:var(--navy-2);color:var(--navy-2);text-decoration:none}
 .csec{margin-bottom:64px;scroll-margin-top:110px}
-.term{margin-bottom:18px}
-.term-h{display:flex;gap:12px;align-items:baseline;margin-bottom:10px}
-.term-h b{font-size:16px;color:var(--navy)}
-.term-h span{font-size:13.5px;color:var(--muted)}
-.offs{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
-.offs li{display:flex;gap:10px;align-items:baseline;padding:11px 14px;border:1px solid var(--line);border-radius:8px}
-.offs .role{font-size:13px;color:var(--gold);font-weight:700;flex:none}
-.offs .nm{font-weight:600}
+/* 임원: 기수마다 한 줄 (예: 1기  회장 손갑주  총무 이숙연) */
+.terms{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.terms li{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 18px;padding:12px 2px;border-bottom:1px solid var(--line)}
+.terms .tm{min-width:48px;font-size:16px;color:var(--navy)}
+.terms .tm-r{display:flex;flex-wrap:wrap;gap:4px 18px}
+.terms .ofc{white-space:nowrap}
+.terms .role{font-size:13.5px;color:var(--gold);font-weight:700}
+.terms .nm{font-weight:600}
+.terms .lnk{margin-left:6px}
+.terms .tm-p{font-size:13.5px;color:var(--muted);margin-left:auto}
 .golf{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:32px;margin-bottom:28px}
 .golf h4{margin:0 0 10px;font-size:15px;color:var(--muted);font-weight:700}
 .golf .info{margin:0;white-space:pre-wrap;background:var(--soft);border-radius:8px;padding:14px 16px;font-size:15px}
@@ -180,6 +188,7 @@ td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 .contact div{display:grid;grid-template-columns:110px minmax(0,1fr);gap:12px}
 .contact dt{font-weight:700;color:var(--navy);font-size:14.5px}
 .contact dd{margin:0}
+.adm-links{display:flex;flex-wrap:wrap;gap:10px}
 @media (max-width:560px){.contact div{grid-template-columns:1fr;gap:0}}
 
 /* ---------- 바닥글 ---------- */

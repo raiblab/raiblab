@@ -19,6 +19,8 @@ const NEED_SQL="데이터베이스 업데이트가 아직 안 되었습니다. S
 /* ---------- 메뉴 ---------- */
 const MENU=[["members","Members"],["alumni","Alumni"],["publications","Publications"],["projects","Projects"],["news","News"],["community","Community"],["admissions","Admissions"]];
 const SUB={members:["members","지도교수"],students:["members","재학생"],abd:["members","수료생"]};
+/* 위쪽 메뉴에 마우스를 올리면 아래로 펼쳐지는 하위 메뉴 */
+const DROP={members:Object.keys(SUB).map(k=>[k,SUB[k][1]]),community:[["c-assoc","원우회"],["c-golf","골프회"],["c-act","교류 활동"]]};
 const VIEWS=["home","abd","students"].concat(MENU.map(m=>m[0]));
 /* 예전 주소(#research 등)로 들어와도 맞는 메뉴로 */
 const OLD={phd:"alumni",research:"publications",officers:"members",conference:"news",golf:"community",edu:"community",greeting:"home",chair:"home",intro:"home"};
@@ -36,6 +38,7 @@ const PROF_DEFAULT={name:"전해정",title:"교수",aff:"상명대학교 대학�
   awards:["2025.08 | 연세대학교 정보대학원 우수논문상","2024.05 | 한국콘텐츠학회 우수논문 학술상","2022.05 | 한국부동산학회 전국부동산학술발표대회 학술발표상 (2022 전반기)","2019.12 | 한국부동산학회 전국부동산학술발표대회 학술발표상 (2019 후반기)","2018.03 | Marquis Who's Who 세계인명사전 등재","2011.12 | 한국주택학회 창립 20주년 기념 정기학술대회 우수논문상"]};
 const PROF_SECTIONS=[["edu","학력","Education"],["career","경력","Career"],["society","학회 활동","Academic Service"],["books","저서","Books"],["awards","수상","Awards"]];
 const GRAD_GUIDE="https://www.smu.ac.kr/grad/admission/guideline.do";
+const GRAD_NOTICE="https://www.smu.ac.kr/grad/admission/notice.do";
 const ADM_DEFAULT={
   intro:"레이브랩은 빅데이터와 인공지능으로 부동산시장과 주택시장을 연구하고 싶은 대학원생을 환영합니다. 데이터 분석 경험이 많지 않아도 괜찮습니다. 세미나와 공동연구를 통해 함께 배워 갑니다.",
   steps:["공식 모집요강에서 상명대학교 대학원 부동산학과 박사과정 모집 일정과 지원 자격을 확인합니다.","지원 전에 지도교수에게 이메일로 연구 관심 분야와 간단한 이력을 보내 상담을 요청합니다.","대학원 입학 전형(서류·면접)에 지원합니다.","입학 후 연구실 세미나와 공동연구에 참여합니다."],
@@ -102,17 +105,21 @@ async function save(run,row,cols){const r=await run(row);
   return must(r)}
 
 /* ---------- 이동 ---------- */
-$("#menu").innerHTML=MENU.map(([k,en])=>`<a href="#${k}" data-k="${k}">${en}</a>`).join("");
+$("#menu").innerHTML=MENU.map(([k,en])=>{const d=DROP[k];
+  return `<div class="mi${d?" has-dd":""}"><a href="#${k}" data-k="${k}"${d?' aria-haspopup="true"':""}>${en}</a>${d?`<div class="dd">${d.map(([x,ko])=>x.startsWith("c-")?`<a href="#${k}" data-jump="${x}">${ko}</a>`:`<a href="#${x}">${ko}</a>`).join("")}</div>`:""}</div>`}).join("");
 function go(k){
   k=OLD[k]||k;if(!VIEWS.includes(k))k="home";
   current=k;
   document.querySelectorAll(".view").forEach(v=>{v.hidden=v.id!=="v-"+k;if(v.hidden)v.innerHTML=""});
   const mk=(SUB[k]||[k])[0];
-  document.querySelectorAll("#menu a").forEach(a=>{if(a.dataset.k===mk)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
-  const act=$("#menu a[aria-current]");act&&act.scrollIntoView({block:"nearest",inline:"nearest"});
+  document.querySelectorAll("#menu .mi>a").forEach(a=>{if(a.dataset.k===mk)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
+  document.activeElement&&document.activeElement.closest&&document.activeElement.closest("#menu .dd")&&document.activeElement.blur();
+  const act=$("#menu .mi>a[aria-current]");act&&act.scrollIntoView({block:"nearest",inline:"nearest"});
   render();window.scrollTo(0,0);
 }
 document.addEventListener("click",e=>{const a=e.target.closest('a[href^="#"]');if(!a)return;const raw=a.getAttribute("href").slice(1);
+  if(a.dataset.jump){e.preventDefault();if(current!==raw){history.pushState(null,"","#"+raw);go(raw)}else a.blur();
+    const t=document.getElementById(a.dataset.jump);t&&t.scrollIntoView({behavior:"smooth",block:"start"});return}
   if(raw.startsWith("c-")){e.preventDefault();const t=document.getElementById(raw);t&&t.scrollIntoView({behavior:"smooth",block:"start"});return}
   const k=OLD[raw]||raw;if(!VIEWS.includes(k))return;e.preventDefault();history.pushState(null,"","#"+k);go(k)});
 window.addEventListener("popstate",()=>go((location.hash||"").slice(1)));
@@ -130,12 +137,24 @@ function excerpt(s,n){s=String(s||"").replace(/\s+/g," ").trim();return s.length
 
 /* 논문: 지도교수(전해정)가 저자로 참여한 학술지 논문만 */
 const PROF_RX=/전해정|Jeon,?\s*Hae[-\s]?jeong|Hae[-\s]?jeong\s*Jeon/i;
-function pubs(){return S.posts.filter(p=>p.board==="research"&&(p.kind==="학술지 논문"||!p.kind)&&PROF_RX.test(p.authors))
+/* 논문 목록 보완: files/publications.json (한국연구재단 KRI 실적, 2026.10) 의 공저자·학술지·연도·링크로 빈 칸을 채움.
+   관리자가 화면에서 저자·링크를 직접 고치면 그 값이 우선 (저자가 '전해정' 한 명뿐인 경우에만 KRI 공저자로 바꿈) */
+const tkey=s=>String(s||"").replace(/[^\p{L}\p{N}]+/gu,"").toLowerCase();
+let KRI=[];
+fetch("files/publications.json?v=20261112").then(r=>r.ok?r.json():[]).then(d=>{KRI=Array.isArray(d)?d:[];if(S.loaded)render()}).catch(()=>{});
+function kriOf(t){const k=tkey(t);if(!k)return null;return KRI.find(x=>x.k===k)||KRI.find(x=>k.length>=8&&(x.k.startsWith(k)||k.startsWith(x.k)))||null}
+function enrich(p){const x=kriOf(p.title);if(!x)return p;const q=Object.assign({},p);
+  if(x.authors&&(!String(q.authors).trim()||String(q.authors).replace(/\s/g,"")==="전해정"))q.authors=x.authors;
+  if(!String(q.link).trim()&&x.link)q.link=x.link;if(!q.venue&&x.venue)q.venue=x.venue;if(!q.year&&x.year)q.year=x.year;return q}
+function pubs(){return S.posts.filter(p=>p.board==="research"&&(p.kind==="학술지 논문"||!p.kind)&&PROF_RX.test(p.authors)).map(enrich)
   .sort((a,c)=>(Number(c.year)||0)-(Number(a.year)||0)||String(c.date||"").localeCompare(String(a.date||""))||String(a.title).localeCompare(String(c.title),"ko"))}
 function pubLink(p){const l=String(p.link||"").trim();if(!l)return"";
   const doi=l.match(/^(?:https?:\/\/(?:dx\.)?doi\.org\/|doi:\s*)?(10\.\d{4,9}\/\S+)$/i);
   if(doi)return `<a href="https://doi.org/${esc(doi[1])}" target="_blank" rel="noopener">DOI ${esc(doi[1])}</a>`;
-  return url(l)?`<a href="${esc(l)}" target="_blank" rel="noopener">논문 보기 ↗</a>`:""}
+  if(!url(l))return"";
+  const lab=/kci\.go\.kr/i.test(l)?"KCI 원문 ↗":/doi\.org\//i.test(l)?"DOI ↗":"논문 보기 ↗";
+  const d=l.match(/doi\.org\/(10\.\d{4,9}\/\S+)$/i);
+  return `<a href="${esc(l)}" target="_blank" rel="noopener">${d?"DOI "+esc(d[1]):lab}</a>`}
 function pubItem(p){
   return `<li class="pub"><div class="pub-t">${esc(p.title)}</div><div class="pub-a">${esc(p.authors)}</div><div class="pub-v">${p.venue?`<span class="venue">${esc(p.venue)}</span>`:""}${p.year?`<span>${esc(p.year)}</span>`:""}${pubLink(p)?`<span>${pubLink(p)}</span>`:""}${S.canEdit?`<button class="lnk" data-edit="${p.id}">수정</button>`:""}</div></li>`}
 
@@ -286,8 +305,8 @@ function officerBlock(sec){
   const terms={};S.officers.filter(o=>o.section===sec).forEach(o=>{(terms[o.term]=terms[o.term]||[]).push(o)});
   const keys=Object.keys(terms).sort((a,b)=>(terms[b][0].termOrder||0)-(terms[a][0].termOrder||0)||b.localeCompare(a,"ko"));
   if(!keys.length)return `<p class="empty">${S.loaded?"등록된 명단이 없습니다.":"불러오는 중…"}</p>`;
-  return keys.map(t=>{const rows=terms[t].sort((a,b)=>roleRank(a.role)-roleRank(b.role)||String(a.name).localeCompare(String(b.name),"ko"));
-    return `<div class="term"><div class="term-h"><b>${esc(t)}</b>${rows[0].period?`<span>임기 ${esc(rows[0].period)}</span>`:""}</div><ul class="offs">${rows.map(r=>`<li><span class="role">${esc(r.role)}</span><span class="nm">${esc(r.name)}</span>${S.canEdit?`<button class="lnk" data-off="${r.id}">수정</button>`:""}</li>`).join("")}</ul></div>`}).join("")}
+  return `<ul class="terms">`+keys.map(t=>{const rows=terms[t].sort((a,b)=>roleRank(a.role)-roleRank(b.role)||String(a.name).localeCompare(String(b.name),"ko"));
+    return `<li><b class="tm">${esc(t)}</b><span class="tm-r">${rows.map(r=>`<span class="ofc"><span class="role">${esc(r.role)}</span> <span class="nm">${esc(r.name)}</span>${S.canEdit?`<button class="lnk" data-off="${r.id}">수정</button>`:""}</span>`).join("")}</span>${rows[0].period?`<span class="tm-p">임기 ${esc(rows[0].period)}</span>`:""}</li>`}).join("")+`</ul>`}
 function renderCommunity(){
   const el=$("#v-community");const G=pageData("golf",GOLF_DEFAULT);
   el.innerHTML=pageHead("Community","커뮤니티","",`<nav class="jump"><a href="#c-assoc">원우회</a><a href="#c-golf">골프회</a><a href="#c-act">교류 활동</a></nav>`)+
@@ -314,7 +333,7 @@ function renderAdmissions(){
   `<div class="adm"><p class="adm-intro">${esc(A.intro)}</p>
    ${steps.length?`<h3>지원 절차</h3><ol class="steps">${steps.map(s=>`<li>${esc(s)}</li>`).join("")}</ol>`:""}
    <h3>문의</h3>${contacts.length?`<dl class="contact">${contacts.map(([k,v])=>`<div><dt>${k}</dt><dd>${v}</dd></div>`).join("")}</dl>`:`<p class="empty">문의처를 준비 중입니다.</p>`}
-   ${url(A.guide)?`<p><a class="btn" href="${esc(A.guide)}" target="_blank" rel="noopener">상명대학교 대학원 모집요강 보기 ↗</a></p>`:""}</div>`;
+   <p class="adm-links"><a class="btn" href="${GRAD_NOTICE}" target="_blank" rel="noopener">상명대학교 대학원 입학공지 ↗</a>${url(A.guide)?`<a class="btn ghost" href="${esc(A.guide)}" target="_blank" rel="noopener">모집요강 보기 ↗</a>`:""}</p></div>`;
   bind("ed-adm",editAdmissions);
 }
 
