@@ -274,3 +274,26 @@ td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 .pp-m{font-size:13.5px;color:var(--gold);font-weight:600;margin-top:4px}
 .pp-o{font-size:14px;color:var(--muted);margin-top:2px}
 .prof{padding-bottom:40px;margin-bottom:40px}
+
+/* 첫 화면 소식: 사진 없이 한 줄씩 */
+.nlist{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.nlist li{border-bottom:1px solid var(--line)}
+.nlist a{display:flex;gap:12px;align-items:center;padding:14px 2px;color:var(--ink)}
+.nlist a:hover{text-decoration:none;color:var(--navy-2)}
+.nlist time{flex:none;width:86px;font-size:14px;color:var(--faint);font-variant-numeric:tabular-nums}
+.nlist .tag{flex:none}
+.nl-t{font-size:16px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:560px){.nlist a{flex-wrap:wrap;gap:4px 10px}.nlist time{width:auto}.nl-t{flex-basis:100%;white-space:normal}}
+
+/* Alumni: 사진 카드 */
+.alums{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:28px 22px}
+@media (max-width:900px){.alums{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:620px){.alums{grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 14px}}
+.al-ph{display:block;width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:10px;background:var(--soft);border:1px solid var(--line)}
+.al-ph.none{display:grid;place-items:center;font-size:44px;font-weight:800;color:#c3ccd8}
+.al-b{padding:12px 2px 0}
+.al-n{font-size:18px;font-weight:700}
+.al-n .lnk{font-size:12px;margin-left:4px}
+.al-d{font-size:14px;color:var(--gold);font-weight:600;margin-top:2px}
+.al-o{font-size:14px;color:var(--muted);margin-top:2px}
+.al-f{font-size:13px;color:var(--faint);margin-top:2px}

@@ -18,10 +18,10 @@ const NEED_SQL="데이터베이스 업데이트가 아직 안 되었습니다. S
 
 /* ---------- 메뉴 ---------- */
 const MENU=[["members","Members"],["alumni","Alumni"],["publications","Publications"],["projects","Projects"],["news","News"],["community","Community"],["admissions","Admissions"]];
-const SUB={members:["members","지도교수"],phd:["members","박사"],abd:["members","박사수료"],students:["members","재학생"]};
-const VIEWS=["home","phd","abd","students"].concat(MENU.map(m=>m[0]));
+const SUB={members:["members","지도교수"],abd:["members","박사수료"],students:["members","재학생"]};
+const VIEWS=["home","abd","students"].concat(MENU.map(m=>m[0]));
 /* 예전 주소(#research 등)로 들어와도 맞는 메뉴로 */
-const OLD={research:"publications",officers:"members",conference:"news",golf:"community",edu:"community",greeting:"home",chair:"home",intro:"home"};
+const OLD={phd:"alumni",research:"publications",officers:"members",conference:"news",golf:"community",edu:"community",greeting:"home",chair:"home",intro:"home"};
 
 /* ---------- 기본 내용 (관리자가 화면에서 바꾸면 DB 값이 우선) ---------- */
 /* 지도교수 이력: 상명대학교 교수프로필(culturalart.smu.ac.kr) 기준. 각 줄은 "기간 | 내용" */
@@ -65,7 +65,7 @@ const canWrite=()=>!!myMember()||S.canEdit;
 /* ---------- DB ↔ 화면 ---------- */
 const toPost=r=>({id:r.id,board:r.board,title:r.title||"",body:r.body||"",date:r.date||"",kind:r.kind||"",year:r.year||"",authors:r.authors||"",venue:r.venue||"",link:r.link||"",period:r.period||"",status:r.status||"",authorName:r.author_name||"",authorId:r.author_id||"",photos:Array.isArray(r.photos)?r.photos:[],createdAt:r.created_at});
 const toOfficer=r=>({id:r.id,section:r.section||"임원",term:r.term||"",period:r.period||"",role:r.role||"",name:r.name||"",note:r.note||"",termOrder:r.term_order});
-const toMember=r=>({id:r.id,userId:r.user_id||"",name:r.name||"",phone:r.phone||"",gen:r.gen||"",course:r.course||"",year:r.year||"",email:r.email||"",org:r.org||"",field:r.field||"",scholar:r.scholar||"",gradYear:r.grad_year||"",degree:r.degree||"",joinedAt:r.joined_at});
+const toMember=r=>({id:r.id,userId:r.user_id||"",name:r.name||"",phone:r.phone||"",gen:r.gen||"",course:r.course||"",year:r.year||"",email:r.email||"",org:r.org||"",field:r.field||"",scholar:r.scholar||"",gradYear:r.grad_year||"",degree:r.degree||"",photo:r.photo||"",joinedAt:r.joined_at});
 const pageData=(key,def)=>{const d=Object.assign({},def),st=((S.pages[key]||{}).data)||{};
   Object.keys(st).forEach(k=>{const v=st[k];if(v==null||v===""||(Array.isArray(v)&&!v.length))return;d[k]=v});
   if(key==="professor"&&lines(st.bio).length&&!lines(st.career).length)d.career=st.bio;return d};
@@ -144,7 +144,7 @@ function cards(list,emptyMsg){return list.length?`<div class="cards">${list.map(
 /* ---------- 렌더 ---------- */
 function render(){
   renderWho();
-  ({home:renderHome,members:renderProfessor,phd:()=>renderGroup("phd"),abd:()=>renderGroup("abd"),students:()=>renderGroup("students"),alumni:renderAlumni,publications:renderPubs,projects:renderProjects,news:renderNews,community:renderCommunity,admissions:renderAdmissions})[current]();
+  ({home:renderHome,members:renderProfessor,abd:()=>renderGroup("abd"),students:()=>renderGroup("students"),alumni:renderAlumni,publications:renderPubs,projects:renderProjects,news:renderNews,community:renderCommunity,admissions:renderAdmissions})[current]();
 }
 function renderWho(){
   const w=$("#who");const fl=$("#foot-login");
@@ -162,7 +162,7 @@ function renderHome(){
   const P=pubs().slice(0,3);const N=postsOf("news","conference").sort(byDate).slice(0,3);
   el.innerHTML=`<div class="hero"><img class="hero-logo" src="images/raib-logo-en.png" alt="RAIB Lab — Real Estate AI &amp; Big Data Lab"><p class="hero-t">${esc(INTRO)}</p></div>
   <div class="home-sec"><div class="sec-h"><h2>Recent Publications</h2><a href="#publications">전체 보기 →</a></div>${!S.loaded?loading():P.length?`<ol class="pubs">${P.map(pubItem).join("")}</ol>`:`<p class="empty">등록된 논문이 없습니다.</p>`}</div>
-  <div class="home-sec"><div class="sec-h"><h2>News</h2><a href="#news">전체 보기 →</a></div>${!S.loaded?loading():cards(N,"등록된 소식이 없습니다.")}</div>`;
+  <div class="home-sec"><div class="sec-h"><h2>News</h2><a href="#news">전체 보기 →</a></div>${!S.loaded?loading():N.length?`<ul class="nlist">${N.map(p=>`<li><a href="#news" data-open="${p.id}"><time>${fmt(p.date||p.createdAt)}</time>${p.kind?`<span class="tag">${esc(p.kind)}</span>`:""}<span class="nl-t">${esc(p.title)}</span></a></li>`).join("")}</ul>`:`<p class="empty">등록된 소식이 없습니다.</p>`}</div>`;
 }
 
 /* Members: 지도교수 / 박사 / 박사수료 / 재학생 — 각각 한 페이지 */
@@ -182,7 +182,7 @@ function renderProfessor(){
   <div class="cvs">${secs}</div>`;
   bind("ed-prof",editProfessor);
 }
-const GROUPS={phd:["박사","박사","Ph.D.","박사학위를 취득한 구성원입니다."],abd:["박사수료","박사수료","Ph.D. Candidates","박사과정을 수료한 구성원입니다."],students:["박사과정","재학생","Ph.D. Students","박사과정에 재학 중인 구성원입니다."]};
+const GROUPS={abd:["박사수료","박사수료","Ph.D. Candidates","박사과정을 수료한 구성원입니다."],students:["박사과정","재학생","Ph.D. Students","박사과정에 재학 중인 구성원입니다."]};
 function renderGroup(k){
   const [course,ko,en,desc]=GROUPS[k];const el=$("#v-"+k);
   const list=S.members.filter(m=>m.course===course).sort(k==="phd"
@@ -212,13 +212,14 @@ function adminMembers(){
   return `<details class="admin-box"><summary>관리자: 전체 명단 관리 (${S.members.length}명)</summary><div class="tablewrap"><table><thead><tr><th>기수</th><th>성명</th><th>과정</th><th>졸업</th><th>소속</th><th>로그인 계정</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>${orphan}</details>`;
 }
 
-/* Alumni: 학위 취득자 */
+/* Alumni: 박사학위 취득자 — 사진 카드 */
+function avatar(m){return m.photo?`<img class="al-ph" src="${esc(m.photo)}" alt="${esc(m.name)}" loading="lazy">`:`<div class="al-ph none" aria-hidden="true">${esc(String(m.name||"").slice(0,1))}</div>`}
 function renderAlumni(){
   const el=$("#v-alumni");
   const list=S.members.filter(m=>m.course==="박사").sort((a,b)=>(Number(b.gradYear)||0)-(Number(a.gradYear)||0)||String(a.name).localeCompare(String(b.name),"ko"));
   const inner=!S.loaded?loading():!list.length?`<p class="empty">${S.membersOk?"등록된 졸업생이 없습니다.":"명단을 준비 중입니다."}</p>`
-    :`<div class="tablewrap"><table class="alum"><thead><tr><th>이름</th><th>학위</th><th>졸업연도</th><th>소속</th></tr></thead><tbody>${list.map(m=>`<tr><td class="nowrap"><b>${esc(m.name)}</b>${S.canEdit?` <button class="lnk" data-mem="${m.id}">수정</button>`:""}</td><td>${esc(m.degree||"부동산학 박사")}</td><td class="num">${esc(m.gradYear)}</td><td>${esc(m.org)}</td></tr>`).join("")}</tbody></table></div>`;
-  el.innerHTML=pageHead("Alumni","졸업생","레이브랩에서 박사학위를 취득한 졸업생입니다.",adminBtn("m-add","졸업생 추가"))+inner;
+    :`<ul class="alums">${list.map(m=>`<li>${avatar(m)}<div class="al-b"><div class="al-n">${esc(m.name)}${S.canEdit||m.userId&&m.userId===S.myId?` <button class="lnk" data-mem="${m.id}">수정</button>`:""}</div><div class="al-d">${esc(m.degree||"부동산학 박사")}${m.gradYear?` · ${esc(m.gradYear)}`:""}</div>${m.org?`<div class="al-o">${esc(m.org)}</div>`:""}${m.field?`<div class="al-f">${esc(m.field)}</div>`:""}</div></li>`).join("")}</ul>`;
+  el.innerHTML=pageHead("Alumni","박사 졸업생","레이브랩에서 박사학위를 취득한 졸업생입니다."+(S.loaded&&list.length?` (${list.length}명)`:""),adminBtn("m-add","졸업생 추가"))+inner;
   bind("m-add",()=>editMember({course:"박사"},false));bindMemberButtons(el);
 }
 
@@ -346,6 +347,7 @@ function memberFields(m){return `
     <label for="m-course">구분<select id="m-course" name="course">${COURSES.map(c=>`<option value="${c}"${c===m.course?" selected":""}>${courseLabel(c)} (${c})</option>`).join("")}</select></label></div>
     <div class="row2"><label for="m-gen">기수 (숫자만)<input id="m-gen" name="gen" type="number" min="1" max="200" value="${esc(m.gen)}"></label><label for="m-year">입학 연도 (선택)<input id="m-year" name="year" type="number" min="1990" max="2100" value="${esc(m.year)}"></label></div>
     ${S.hasGrad||!S.members.length?`<div class="row2"><label for="m-grad">졸업연도 (졸업생만)<input id="m-grad" name="grad_year" type="number" min="1990" max="2100" value="${esc(m.gradYear)}"></label><label for="m-degree">학위 (졸업생만)<input id="m-degree" name="degree" placeholder="부동산학 박사" value="${esc(m.degree)}"></label></div>`:""}
+    <label for="m-photo">사진 (졸업생 페이지에 표시 · 선택)${m.photo?`<span class="hint">지금 사진이 있습니다. 바꿀 때만 고르세요.</span>`:""}<input id="m-photo" name="photo" type="file" accept="image/*"></label>
     <label for="m-org">소속 (직장·직위)<input id="m-org" name="org" placeholder="예: ○○공사 차장" value="${esc(m.org)}"></label>
     <label for="m-field">연구분야 (선택)<input id="m-field" name="field" value="${esc(m.field)}"></label>
     <label for="m-email">연락 이메일 (선택 · 홈페이지에는 공개되지 않음)<input id="m-email" name="email" type="email" value="${esc(m.email)}"></label>`}
@@ -370,7 +372,7 @@ function signupModal(){
       else{const mm=modal(`<h2>인증 메일을 보냈습니다</h2><div class="content">${esc(email)}로 보낸 메일의 링크를 누른 뒤 로그인하시면 명단에 자동으로 올라갑니다.</div><div class="actions"><button class="btn" id="ok">확인</button></div>`);mm.querySelector("#ok").onclick=close}
     }catch(err){b.disabled=false;$("#suerr").textContent=errMsg(err)}};
 }
-async function insertSelf(prof){await save(r=>sb.from("members").insert(r),Object.assign({user_id:S.myId},prof),["grad_year","degree"])}
+async function insertSelf(prof){await save(r=>sb.from("members").insert(r),Object.assign({user_id:S.myId},prof),["grad_year","degree","photo"])}
 async function ensureMemberRow(session){
   const pend=session&&session.user&&session.user.user_metadata&&session.user.user_metadata.pending_member;
   if(!pend||!S.myId)return;
@@ -391,11 +393,11 @@ function editMember(m,self){
   md.querySelector("#mc").onclick=close;
   const del=md.querySelector("#mdel");del&&(del.onclick=async()=>{if(!del.dataset.sure){del.dataset.sure=1;del.textContent="한 번 더 누르면 "+(self?"빼기":"삭제");return}
     try{must(await sb.from("members").delete().eq("id",m.id));close();toast("처리했습니다");loadAll()}catch(err){$("#merr").textContent=errMsg(err)}});
-  md.querySelector("#mf").onsubmit=async e=>{e.preventDefault();const d=readMember(new FormData(e.target));const btn=$("#ms");btn.disabled=true;
-    try{
+  md.querySelector("#mf").onsubmit=async e=>{e.preventDefault();const fd=new FormData(e.target);const d=readMember(fd);const btn=$("#ms");btn.disabled=true;
+    try{const pf=fd.get("photo");if(pf&&pf.size){btn.textContent="사진 올리는 중…";d.photo=(await uploadPhoto(pf)).url}
       if(isNew&&self)await insertSelf(d);
-      else if(isNew)await save(r=>sb.from("members").insert(r),d,["grad_year","degree"]);
-      else{d.updated_at=new Date().toISOString();await save(r=>sb.from("members").update(r).eq("id",m.id),d,["grad_year","degree"])}
+      else if(isNew)await save(r=>sb.from("members").insert(r),d,["grad_year","degree","photo"]);
+      else{d.updated_at=new Date().toISOString();await save(r=>sb.from("members").update(r).eq("id",m.id),d,["grad_year","degree","photo"])}
       if(!self&&!isNew&&m.userId){const want=!!(e.target.querySelector("#m-admin")||{}).checked,has=S.admins.includes(m.userId);
         if(want&&!has)must(await sb.from("admins").insert({user_id:m.userId}));
         if(!want&&has)must(await sb.from("admins").delete().eq("user_id",m.userId))}
