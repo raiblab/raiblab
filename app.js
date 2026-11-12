@@ -120,7 +120,8 @@ window.addEventListener("popstate",()=>go((location.hash||"").slice(1)));
 function postsOf(...b){return S.posts.filter(p=>b.includes(p.board))}
 const byDate=(a,c)=>String(c.date||c.createdAt||"").localeCompare(String(a.date||a.createdAt||""));
 function loading(){return `<p class="empty">불러오는 중…</p>`}
-function pageHead(en,ko,desc,btns){return `<div class="ph"><div><h1>${en}</h1>${ko?`<p class="ph-ko">${ko}</p>`:""}${desc?`<p class="ph-d">${desc}</p>`:""}</div>${btns?`<div class="tools">${btns}</div>`:""}</div>`}
+/* 페이지 제목은 영어만 (한글 부제·설명은 표시하지 않음) */
+function pageHead(en,ko,desc,btns){return `<div class="ph"><div><h1>${en}</h1></div>${btns?`<div class="tools">${btns}</div>`:""}</div>`}
 const adminBtn=(id,label)=>S.canEdit?`<button class="btn sm ghost" id="${id}">${label}</button>`:"";
 function bind(id,fn){const el=document.getElementById(id);el&&(el.onclick=fn)}
 function excerpt(s,n){s=String(s||"").replace(/\s+/g," ").trim();return s.length>n?s.slice(0,n).trim()+"…":s}
@@ -193,7 +194,7 @@ function renderGroup(k){
     :`<ul class="people">${list.map(m=>`<li><div class="pp-n">${esc(m.name)}${ed(m)}</div>${k==="phd"?`<div class="pp-m">${[m.gradYear&&m.gradYear+" 학위 취득",m.degree||"부동산학 박사"].filter(Boolean).map(esc).join(" · ")}</div>${m.org?`<div class="pp-o">${esc(m.org)}</div>`:""}`:""}</li>`).join("")}</ul>`;
   let btns=adminBtn("m-add","구성원 추가");
   if(S.session&&!myMember())btns+=`<button class="btn sm ghost" id="m-join">명단에 내 정보 등록</button>`;
-  el.innerHTML=pageHead("Members","","",btns)+memberTabs(k)+`<div class="grp-h"><h2>${ko} <small>${en}</small></h2><p>${desc}${S.loaded&&list.length?` (${list.length}명)`:""}</p></div>`+inner+(S.canEdit&&k==="students"?adminMembers():"");
+  el.innerHTML=pageHead("Members","","",btns)+memberTabs(k)+`<div class="grp-h"><h2>${ko} <small>${en}</small></h2></div>`+inner+(S.canEdit&&k==="students"?adminMembers():"");
   bind("m-add",()=>editMember({course},false));bind("m-join",()=>editMember({course},true));
   bindMemberButtons(el);
 }
