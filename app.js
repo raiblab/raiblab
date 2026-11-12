@@ -106,7 +106,7 @@ $("#menu").innerHTML=MENU.map(([k,en])=>`<a href="#${k}" data-k="${k}">${en}</a>
 function go(k){
   k=OLD[k]||k;if(!VIEWS.includes(k))k="home";
   current=k;
-  document.querySelectorAll(".view").forEach(v=>v.hidden=v.id!=="v-"+k);
+  document.querySelectorAll(".view").forEach(v=>{v.hidden=v.id!=="v-"+k;if(v.hidden)v.innerHTML=""});
   const mk=(SUB[k]||[k])[0];
   document.querySelectorAll("#menu a").forEach(a=>{if(a.dataset.k===mk)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
   const act=$("#menu a[aria-current]");act&&act.scrollIntoView({block:"nearest",inline:"nearest"});
@@ -124,7 +124,8 @@ function loading(){return `<p class="empty">불러오는 중…</p>`}
 /* 페이지 제목은 영어만 (한글 부제·설명은 표시하지 않음) */
 function pageHead(en,ko,desc,btns){return `<div class="ph"><div><h1>${en}</h1></div>${btns?`<div class="tools">${btns}</div>`:""}</div>`}
 const adminBtn=(id,label)=>S.canEdit?`<button class="btn sm ghost" id="${id}">${label}</button>`:"";
-function bind(id,fn){const el=document.getElementById(id);el&&(el.onclick=fn)}
+/* 지금 보이는 화면 안의 단추에만 연결 (숨긴 화면에 같은 id가 남아 있어도 헷갈리지 않게) */
+function bind(id,fn){const v=document.getElementById("v-"+current);const el=(v&&v.querySelector("#"+id))||document.getElementById(id);el&&(el.onclick=fn)}
 function excerpt(s,n){s=String(s||"").replace(/\s+/g," ").trim();return s.length>n?s.slice(0,n).trim()+"…":s}
 
 /* 논문: 지도교수(전해정)가 저자로 참여한 학술지 논문만 */
@@ -194,7 +195,7 @@ function renderGroup(k){
   const inner=!S.loaded?loading():!list.length?`<p class="empty">${S.membersOk?"등록된 구성원이 없습니다.":"명단을 준비 중입니다."}</p>`
     :`<ul class="people">${list.map(m=>`<li><div class="pp-n">${esc(m.name)}${ed(m)}</div>${k==="phd"?`<div class="pp-m">${[m.gradYear&&m.gradYear+" 학위 취득",m.degree||"부동산학 박사"].filter(Boolean).map(esc).join(" · ")}</div>${m.org?`<div class="pp-o">${esc(m.org)}</div>`:""}`:""}</li>`).join("")}</ul>`;
   let btns=adminBtn("m-add","구성원 추가");
-  el.innerHTML=pageHead("Members","","",btns)+memberTabs(k)+`<div class="grp-h"><h2>${ko} <small>${en}</small></h2></div>`+inner+(S.canEdit&&k==="students"?adminMembers():"");
+  el.innerHTML=pageHead("Members","","",btns)+memberTabs(k)+`<div class="grp-h"><h2>${ko} <small>${en}</small></h2></div>`+inner;
   bind("m-add",()=>editMember({course},false));
   bindMemberButtons(el);
 }
