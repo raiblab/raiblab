@@ -52,7 +52,7 @@ const NEWS_KINDS=["학술대회 발표","논문 게재","수상","학위","출�
 const COMM_KINDS=["연구실 모임","졸업 축하","친목행사","교류 활동"];
 const FORMS={
   pub:{board:"research",name:"논문",fixed:{kind:"학술지 논문"},fields:[["title","논문 제목","text",null,true],["authors","저자 (쉼표로 구분, 예: 홍길동, 전해정)","text"],["venue","학술지","text"],["year","연도","number"],["link","DOI 또는 논문 링크","text"]]},
-  proj:{board:"research",name:"연구과제",fixed:{kind:"공동연구과제"},fields:[["title","연구 제목","text",null,true],["status","진행 상태","select",["진행 중","완료"]],["period","기간 (예: 2025.03 – 2026.02)","text"],["year","시작 연도","number"],["authors","참여자","text"],["venue","발주·지원기관 (선택)","text"],["body","간단한 설명","textarea"]]},
+  proj:{board:"research",name:"연구과제",fixed:{kind:"공동연구과제"},fields:[["title","연구 제목","text",null,true],["status","진행 상태","select",["진행 중","완료"]],["period","수행 기간 (예: 2025.03 – 2026.02)","text"],["year","시작 연도","number"],["venue","발주·지원기관 (예: 한국연구재단)","text"],["authors","참여 연구자 (쉼표로 구분, 예: 전해정, 홍길동)","text"],["body","간단한 설명 (무엇을 연구했는지 2~3문장)","textarea"]]},
   news:{board:"news",name:"소식",photo:true,fields:[["kind","구분","select",NEWS_KINDS],["title","제목","text",null,true],["date","날짜","date"],["body","짧은 설명 (한두 문장)","textarea"],["link","관련 링크 (선택)","url"]]},
   golf:{board:"golf",name:"골프회 사진",photo:true,fields:[["title","제목","text",null,true],["date","날짜","date"],["body","짧은 설명 (한 문장)","textarea"]]},
   community:{board:"community",name:"교류 활동 사진",photo:true,fields:[["kind","구분","select",COMM_KINDS],["title","제목","text",null,true],["date","날짜","date"],["body","짧은 설명 (한 문장)","textarea"]]}
@@ -280,13 +280,24 @@ function renderPubs(){
   bind("w-pub",()=>editPost("pub"));
 }
 
-/* Projects */
+/* Projects — 기간·발주기관·참여 연구자·설명을 항목별로 */
+/* 예전에 설명 칸에 넣어 둔 "수행기간: 2021.01~2021.11" 은 기간으로 옮겨 보여 줌 */
+function projInfo(p){let body=String(p.body||"").trim(),period=String(p.period||"").trim();
+  const m=body.match(/^수행\s*기간\s*[:：]\s*([^\n]+)\n?/);if(m){if(!period)period=m[1].trim();body=body.slice(m[0].length).trim()}
+  period=period.replace(/\s*~\s*/," – ");
+  const end=(period.split("–")[1]||"").match(/(\d{4})\.?(\d{1,2})?/);
+  let status=p.status;if(!status&&end){const e=Number(end[1])*100+Number(end[2]||12),d=new Date();status=e<d.getFullYear()*100+d.getMonth()+1?"완료":"진행 중"}
+  return {period:period||String(p.year||""),body,status:status||"완료"}}
 function renderProjects(){
   const el=$("#v-projects");
-  const all=S.posts.filter(p=>p.board==="research"&&p.kind==="공동연구과제").sort((a,c)=>(Number(c.year)||0)-(Number(a.year)||0)||String(c.period).localeCompare(String(a.period)));
-  const item=p=>`<li class="proj"><div class="proj-t">${esc(p.title)}</div><div class="proj-m">${[p.period||p.year,p.venue,p.authors&&"참여: "+p.authors].filter(Boolean).map(x=>`<span>${esc(x)}</span>`).join("")}</div>${p.body?`<p class="proj-d">${esc(p.body)}</p>`:""}${S.canEdit?`<button class="lnk" data-edit="${p.id}">수정</button>`:""}</li>`;
+  const all=S.posts.filter(p=>p.board==="research"&&p.kind==="공동연구과제").map(p=>Object.assign({},p,{_:projInfo(p)}))
+    .sort((a,c)=>String(c._.period).localeCompare(String(a._.period))||(Number(c.year)||0)-(Number(a.year)||0));
+  const row=(k,v)=>v?`<div><dt>${k}</dt><dd>${v}</dd></div>`:"";
+  const item=p=>`<li class="proj"><div class="proj-t">${esc(p.title)}${S.canEdit?` <button class="lnk" data-edit="${p.id}">수정</button>`:""}</div>
+    <dl class="proj-i">${row("기간",esc(p._.period))}${row("발주기관",esc(p.venue))}${row("참여 연구자",esc(p.authors))}${row("내용",p._.body?esc(p._.body):"")}</dl>
+    ${S.canEdit&&!p._.body?`<p class="hint">관리자: ‘수정’을 눌러 간단한 설명과 참여 연구자를 넣어 주세요.</p>`:""}</li>`;
   const sec=(t,en,list)=>`<section class="grp"><h3>${t} <small>${en}</small></h3>${list.length?`<ul class="projs">${list.map(item).join("")}</ul>`:`<p class="empty">${S.loaded?"해당 연구가 없습니다.":"불러오는 중…"}</p>`}</section>`;
-  el.innerHTML=pageHead("Projects","연구과제","",adminBtn("w-proj","연구과제 추가"))+sec("진행 중인 연구","Ongoing",all.filter(p=>p.status==="진행 중"))+sec("완료된 연구","Completed",all.filter(p=>p.status!=="진행 중"));
+  el.innerHTML=pageHead("Projects","연구과제","",adminBtn("w-proj","연구과제 추가"))+sec("진행 중인 연구","Ongoing",all.filter(p=>p._.status==="진행 중"))+sec("완료된 연구","Completed",all.filter(p=>p._.status!=="진행 중"));
   bind("w-proj",()=>editPost("proj"));
 }
 
