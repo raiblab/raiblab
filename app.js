@@ -60,7 +60,8 @@ const formOf=p=>p.board==="research"?(p.kind==="공동연구과제"?"proj":"pub"
 const S={popups:[],popupsOk:false,posts:[],pages:{},officers:[],members:[],membersOk:true,admins:[],users:[],usersOk:false,loaded:false,session:null,myId:null,myEmail:"",canEdit:false,q:"",nf:"",hasGrad:false,hasScholar:false};
 let current="home";let popShown=false;
 const myMember=()=>S.myId?S.members.find(m=>m.userId===S.myId):null;
-const canWrite=()=>!!myMember()||S.canEdit;
+/* 글쓰기·수정은 관리자만 */
+const canWrite=()=>S.canEdit;
 
 /* ---------- DB ↔ 화면 ---------- */
 const toPost=r=>({id:r.id,board:r.board,title:r.title||"",body:r.body||"",date:r.date||"",kind:r.kind||"",year:r.year||"",authors:r.authors||"",venue:r.venue||"",link:r.link||"",period:r.period||"",status:r.status||"",authorName:r.author_name||"",authorId:r.author_id||"",photos:Array.isArray(r.photos)?r.photos:[],createdAt:r.created_at});
@@ -149,7 +150,9 @@ function render(){
 }
 function renderWho(){
   const w=$("#who");const fl=$("#foot-login");
-  if(!S.session){w.hidden=true;w.innerHTML="";fl.textContent="관리자 로그인";fl.onclick=loginModal;return}
+  const hl=$("#h-login");const out=async()=>{await sb.auth.signOut();toast("로그아웃했습니다")};
+  if(!S.session){w.hidden=true;w.innerHTML="";fl.textContent="관리자 로그인";fl.onclick=loginModal;hl.textContent="관리자 로그인";hl.onclick=loginModal;return}
+  hl.textContent="로그아웃";hl.onclick=out;
   const mem=myMember();w.hidden=false;
   w.innerHTML=`<div class="wrap ab"><span>${S.canEdit?'<b>관리자</b> · ':""}${esc(mem?mem.name:S.myEmail)}님 로그인 중</span><span class="ab-r">${S.canEdit?'<button class="lnk" id="h-pop">팝업 관리</button>':""}<button class="lnk" id="h-me">내 정보</button><button class="lnk" id="h-out">로그아웃</button></span></div>`;
   bind("h-me",()=>mem?editMember(mem,true):editMember({},true));bind("h-pop",popupManager);
@@ -189,13 +192,12 @@ function renderGroup(k){
   const list=S.members.filter(m=>m.course===course).sort(k==="phd"
     ?(a,b)=>(Number(b.gradYear)||0)-(Number(a.gradYear)||0)||String(a.name).localeCompare(String(b.name),"ko")
     :(a,b)=>(Number(a.gen)||9999)-(Number(b.gen)||9999)||String(a.name).localeCompare(String(b.name),"ko"));
-  const ed=m=>S.canEdit||m.userId&&m.userId===S.myId?` <button class="lnk" data-mem="${m.id}">수정</button>`:"";
+  const ed=m=>S.canEdit?` <button class="lnk" data-mem="${m.id}">수정</button>`:"";
   const inner=!S.loaded?loading():!list.length?`<p class="empty">${S.membersOk?"등록된 구성원이 없습니다.":"명단을 준비 중입니다."}</p>`
     :`<ul class="people">${list.map(m=>`<li><div class="pp-n">${esc(m.name)}${ed(m)}</div>${k==="phd"?`<div class="pp-m">${[m.gradYear&&m.gradYear+" 학위 취득",m.degree||"부동산학 박사"].filter(Boolean).map(esc).join(" · ")}</div>${m.org?`<div class="pp-o">${esc(m.org)}</div>`:""}`:""}</li>`).join("")}</ul>`;
   let btns=adminBtn("m-add","구성원 추가");
-  if(S.session&&!myMember())btns+=`<button class="btn sm ghost" id="m-join">명단에 내 정보 등록</button>`;
   el.innerHTML=pageHead("Members","","",btns)+memberTabs(k)+`<div class="grp-h"><h2>${ko} <small>${en}</small></h2></div>`+inner+(S.canEdit&&k==="students"?adminMembers():"");
-  bind("m-add",()=>editMember({course},false));bind("m-join",()=>editMember({course},true));
+  bind("m-add",()=>editMember({course},false));
   bindMemberButtons(el);
 }
 function bindMemberButtons(el){
@@ -221,7 +223,7 @@ function renderAlumni(){
   const el=$("#v-alumni");
   const list=S.members.filter(m=>m.course==="박사").sort((a,b)=>(Number(b.gradYear)||0)-(Number(a.gradYear)||0)||String(a.name).localeCompare(String(b.name),"ko"));
   const inner=!S.loaded?loading():!list.length?`<p class="empty">${S.membersOk?"등록된 졸업생이 없습니다.":"명단을 준비 중입니다."}</p>`
-    :`<ul class="alums">${list.map(m=>`<li>${avatar(m)}<div class="al-b"><div class="al-n">${esc(m.name)}${S.canEdit||m.userId&&m.userId===S.myId?` <button class="lnk" data-mem="${m.id}">수정</button>`:""}</div><div class="al-d">${esc(m.degree||"부동산학 박사")}${m.gradYear?` · ${esc(m.gradYear)}`:""}</div>${m.org?`<div class="al-o">${esc(m.org)}</div>`:""}${m.field?`<div class="al-f">${esc(m.field)}</div>`:""}</div></li>`).join("")}</ul>`;
+    :`<ul class="alums">${list.map(m=>`<li>${avatar(m)}<div class="al-b"><div class="al-n">${esc(m.name)}${S.canEdit?` <button class="lnk" data-mem="${m.id}">수정</button>`:""}</div><div class="al-d">${esc(m.degree||"부동산학 박사")}${m.gradYear?` · ${esc(m.gradYear)}`:""}</div>${m.org?`<div class="al-o">${esc(m.org)}</div>`:""}${m.field?`<div class="al-f">${esc(m.field)}</div>`:""}</div></li>`).join("")}</ul>`;
   el.innerHTML=pageHead("Alumni","","레이브랩에서 박사학위를 취득한 졸업생입니다."+(S.loaded&&list.length?` (${list.length}명)`:""),adminBtn("m-add","졸업생 추가"))+inner;
   bind("m-add",()=>editMember({course:"박사"},false));bindMemberButtons(el);
 }
@@ -328,18 +330,19 @@ function errMsg(e){const m=(e&&(e.message||e.error_description||e.code))||"오�
 /* ---------- 로그인·회원가입 ---------- */
 function loginModal(){
   if(!sb){toast("홈페이지 설정(Supabase 연결)이 아직 끝나지 않았습니다");return}
-  const m=modal(`<h2>로그인</h2><p class="hint">글을 올리거나 정보를 고치는 연구실 구성원·관리자용입니다. 홈페이지 내용은 로그인 없이 모두 볼 수 있습니다.</p><form class="form" id="lgf">
+  const m=modal(`<h2>관리자 로그인</h2><p class="hint">홈페이지 관리자 전용입니다. 홈페이지 내용은 로그인 없이 누구나 볼 수 있습니다.</p><form class="form" id="lgf">
     <label for="lg-email">이메일<input id="lg-email" type="email" autocomplete="email" required></label>
     <label for="lg-pw">비밀번호<input id="lg-pw" type="password" autocomplete="current-password" required></label>
     <div class="err" id="lgerr"></div>
-    <div class="actions"><button type="button" class="btn ghost" id="lg-reset" style="margin-right:auto">비밀번호 찾기</button><button type="button" class="btn ghost" id="lg-join">회원가입</button><button class="btn" id="lg-go">로그인</button></div></form>`);
-  m.querySelector("#lg-join").onclick=signupModal;
+    <div class="actions"><button type="button" class="btn ghost" id="lg-reset" style="margin-right:auto">비밀번호 찾기</button><button class="btn" id="lg-go">로그인</button></div></form>`);
   m.querySelector("#lg-reset").onclick=async()=>{const em=$("#lg-email").value.trim();if(!em){$("#lgerr").textContent="이메일을 먼저 입력해 주세요.";return}
     const {error}=await sb.auth.resetPasswordForEmail(em,{redirectTo:location.origin+location.pathname});
     $("#lgerr").textContent=error?errMsg(error):"비밀번호 재설정 메일을 보냈습니다. 메일의 링크를 눌러 새 비밀번호를 정해 주세요."};
   m.querySelector("#lgf").onsubmit=async e=>{e.preventDefault();const b=$("#lg-go");b.disabled=true;
     const {error}=await sb.auth.signInWithPassword({email:$("#lg-email").value.trim(),password:$("#lg-pw").value});
     if(error){b.disabled=false;$("#lgerr").textContent=errMsg(error);return}
+    const uid=(await sb.auth.getUser()).data.user?.id;const {data:ad}=await sb.from("admins").select("user_id").eq("user_id",uid).maybeSingle();
+    if(!ad){await sb.auth.signOut();b.disabled=false;$("#lgerr").textContent="관리자 계정이 아닙니다. 홈페이지 관리자만 로그인할 수 있습니다.";return}
     close();toast("로그인했습니다")};
   setTimeout(()=>$("#lg-email").focus(),30);
 }
