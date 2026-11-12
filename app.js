@@ -150,9 +150,7 @@ function render(){
 }
 function renderWho(){
   const w=$("#who");const fl=$("#foot-login");
-  const hl=$("#h-login");const out=async()=>{await sb.auth.signOut();toast("로그아웃했습니다")};
-  if(!S.session){w.hidden=true;w.innerHTML="";fl.textContent="관리자 로그인";fl.onclick=loginModal;hl.textContent="관리자 로그인";hl.onclick=loginModal;return}
-  hl.textContent="로그아웃";hl.onclick=out;
+  if(!S.session){w.hidden=true;w.innerHTML="";fl.textContent="관리자 로그인";fl.onclick=loginModal;return}
   const mem=myMember();w.hidden=false;
   w.innerHTML=`<div class="wrap ab"><span>${S.canEdit?'<b>관리자</b> · ':""}${esc(mem?mem.name:S.myEmail)}님 로그인 중</span><span class="ab-r">${S.canEdit?'<button class="lnk" id="h-pop">팝업 관리</button>':""}<button class="lnk" id="h-me">내 정보</button><button class="lnk" id="h-out">로그아웃</button></span></div>`;
   bind("h-me",()=>mem?editMember(mem,true):editMember({},true));bind("h-pop",popupManager);
