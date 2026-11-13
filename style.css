@@ -341,3 +341,19 @@ td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 
 /* 입학 안내 문구: 입력한 줄바꿈 그대로 */
 .adm-intro{white-space:pre-line}
+
+/* 논문: 휴대폰에서는 한 줄에 한 편씩 — 제목은 보이는 만큼만, 누르면 저자·학술지가 펼쳐짐 */
+@media (max-width:640px){
+  .pub{padding:11px 2px}
+  .pub-t{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+  .pub .pub-a,.pub .pub-v{display:none}
+  .pub.open .pub-t{white-space:normal}
+  .pub.open .pub-a{display:block}
+  .pub.open .pub-v{display:flex}
+}
+
+/* 새 글 표시(빨간 점·N) */
+:root{--new:#e5383b}
+.newdot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--new);margin-left:6px;vertical-align:super}
+.menu .mi>a.has-new::before{content:"";position:absolute;top:5px;right:4px;width:6px;height:6px;border-radius:50%;background:var(--new)}
+.newtag{display:inline-block;font-size:10px;font-weight:700;line-height:1;color:#fff;background:var(--new);border-radius:3px;padding:2px 3px;margin-right:5px;vertical-align:2px}

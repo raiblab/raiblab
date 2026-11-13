@@ -122,6 +122,8 @@ function go(k){
   const act=$("#menu .mi>a[aria-current]");act&&act.scrollIntoView({block:"nearest",inline:"nearest"});
   render();window.scrollTo(0,0);
 }
+/* 휴대폰: 논문은 한 줄에 한 편(제목만) — 제목을 누르면 저자·학술지가 펼쳐짐 */
+document.addEventListener("click",e=>{const t=e.target.closest(".pub-t");if(!t||!matchMedia("(max-width:640px)").matches)return;t.parentElement.classList.toggle("open")});
 document.addEventListener("click",e=>{const a=e.target.closest('a[href^="#"]');if(!a)return;const raw=a.getAttribute("href").slice(1);
   if(a.dataset.jump){e.preventDefault();if(current!==raw){history.pushState(null,"","#"+raw);go(raw)}else a.blur();
     const t=document.getElementById(a.dataset.jump);t&&t.scrollIntoView({behavior:"smooth",block:"start"});return}
@@ -161,18 +163,37 @@ function pubLink(p){const l=String(p.link||"").trim();if(!l)return"";
   const d=l.match(/doi\.org\/(10\.\d{4,9}\/\S+)$/i);
   return `<a href="${esc(l)}" target="_blank" rel="noopener">${d?"DOI "+esc(d[1]):lab}</a>`}
 function pubItem(p){
-  return `<li class="pub"><div class="pub-t">${esc(p.title)}</div><div class="pub-a">${esc(p.authors)}</div><div class="pub-v">${p.venue?`<span class="venue">${esc(p.venue)}</span>`:""}${p.year?`<span>${esc(p.year)}</span>`:""}${pubLink(p)?`<span>${pubLink(p)}</span>`:""}${S.canEdit?`<button class="lnk" data-edit="${p.id}">수정</button>`:""}</div></li>`}
+  return `<li class="pub"><div class="pub-t" title="${esc(p.title)}">${NTAG(p,"publications")}${esc(p.title)}</div><div class="pub-a">${esc(p.authors)}</div><div class="pub-v">${p.venue?`<span class="venue">${esc(p.venue)}</span>`:""}${p.year?`<span>${esc(p.year)}</span>`:""}${pubLink(p)?`<span>${pubLink(p)}</span>`:""}${S.canEdit?`<button class="lnk" data-edit="${p.id}">수정</button>`:""}</div></li>`}
 
 /* 소식·사진 카드 */
 function card(p){const ph=p.photos[0];
-  return `<button class="card" data-open="${p.id}"><div class="cph${ph?"":" none"}"${ph?` style="background-image:url('${esc(ph.url)}')"`:""}>${ph?(p.photos.length>1?`<span class="n">+${p.photos.length-1}</span>`:""):"<span>RAIB Lab</span>"}</div><div class="cb"><div class="cm">${p.kind?`<span class="tag">${esc(p.kind)}</span>`:""}<time>${fmt(p.date||p.createdAt)}</time></div><div class="ct">${esc(p.title)}</div>${p.body?`<div class="cx">${esc(excerpt(p.body,80))}</div>`:""}</div></button>`}
+  return `<button class="card" data-open="${p.id}"><div class="cph${ph?"":" none"}"${ph?` style="background-image:url('${esc(ph.url)}')"`:""}>${ph?(p.photos.length>1?`<span class="n">+${p.photos.length-1}</span>`:""):"<span>RAIB Lab</span>"}</div><div class="cb"><div class="cm">${p.kind?`<span class="tag">${esc(p.kind)}</span>`:""}<time>${fmt(p.date||p.createdAt)}</time></div><div class="ct">${NTAG(p)}${esc(p.title)}</div>${p.body?`<div class="cx">${esc(excerpt(p.body,80))}</div>`:""}</div></button>`}
 function cards(list,emptyMsg,cls){return list.length?`<div class="cards${cls?" "+cls:""}">${list.map(card).join("")}</div>`:`<p class="empty">${emptyMsg}</p>`}
 
 /* ---------- 렌더 ---------- */
 function render(){
   renderWho();
   ({home:renderHome,members:renderProfessor,abd:()=>renderGroup("abd"),students:()=>renderGroup("students"),alumni:renderAlumni,publications:renderPubs,projects:renderProjects,news:renderNews,community:renderCommunity,admissions:renderAdmissions})[current]();
+  if(S.loaded&&NEWSRC[current])markSeen(current);
+  renderDots();
 }
+/* ---------- 새 글 표시(빨간 점) ----------
+   방문자마다 메뉴를 마지막으로 본 때를 이 브라우저에 기억해 두고,
+   그 뒤에 올라온 글(최근 14일 안)이 있으면 위쪽 메뉴·첫 화면 제목에 빨간 점, 글 앞에 N 을 붙입니다.
+   처음 오는 사람에게는 최근 7일 안의 글을 새 글로 보여 줍니다. */
+const NEWSRC={publications:()=>pubs(),projects:()=>S.posts.filter(p=>p.board==="research"&&p.kind==="공동연구과제"),
+  news:()=>postsOf("news","conference"),community:()=>postsOf("golf","community")};
+const NEW_DAYS=14,FIRST_DAYS=7,DAY=864e5;
+function seenAt(k){try{const v=localStorage.getItem("raib-seen-"+k);return v?Number(v):null}catch(_){return null}}
+function markSeen(k){try{localStorage.setItem("raib-seen-"+k,String(Date.now()))}catch(_){}}
+const menuOf=p=>p.board==="research"?(p.kind==="공동연구과제"?"projects":"publications"):(p.board==="golf"||p.board==="community")?"community":"news";
+function isNew(p,k){const t=new Date(p.createdAt).getTime();if(!t)return false;
+  const now=Date.now(),s=seenAt(k||menuOf(p));
+  return s?(t>s&&now-t<NEW_DAYS*DAY):(now-t<FIRST_DAYS*DAY)}
+function hasNew(k){return S.loaded&&!!NEWSRC[k]&&k!==current&&NEWSRC[k]().some(p=>isNew(p,k))}
+const DOT='<span class="newdot" aria-label="새 글"></span>';
+const NTAG=(p,k)=>isNew(p,k)?'<span class="newtag" aria-label="새 글">N</span>':"";
+function renderDots(){document.querySelectorAll("#menu .mi>a").forEach(a=>a.classList.toggle("has-new",hasNew(a.dataset.k)))}
 function renderWho(){
   const w=$("#who");const fl=$("#foot-login");
   if(!S.session){w.hidden=true;w.innerHTML="";fl.textContent="관리자 로그인";fl.onclick=loginModal;return}
@@ -188,8 +209,8 @@ function renderHome(){
   const el=$("#v-home");
   const P=pubs().slice(0,3);const N=postsOf("news","conference").sort(byDate).slice(0,3);
   el.innerHTML=`<div class="hero"><img class="hero-logo" src="images/raib-logo-en.png" alt="RAIB Lab — Real Estate AI &amp; Big Data Lab"><p class="hero-t">${esc(INTRO)}</p></div>
-  <div class="home-sec"><div class="sec-h"><h2>Recent Publications</h2><a href="#publications">전체 보기 →</a></div>${!S.loaded?loading():P.length?`<ol class="pubs">${P.map(pubItem).join("")}</ol>`:`<p class="empty">등록된 논문이 없습니다.</p>`}</div>
-  <div class="home-sec"><div class="sec-h"><h2>News</h2><a href="#news">전체 보기 →</a></div>${!S.loaded?loading():N.length?`<ul class="nlist">${N.map(p=>`<li><a href="#news" data-open="${p.id}"><time>${fmt(p.date||p.createdAt)}</time>${p.kind?`<span class="tag">${esc(p.kind)}</span>`:""}<span class="nl-t">${esc(p.title)}</span></a></li>`).join("")}</ul>`:`<p class="empty">등록된 소식이 없습니다.</p>`}</div>`;
+  <div class="home-sec"><div class="sec-h"><h2>Recent Publications${hasNew("publications")?DOT:""}</h2><a href="#publications">전체 보기 →</a></div>${!S.loaded?loading():P.length?`<ol class="pubs">${P.map(pubItem).join("")}</ol>`:`<p class="empty">등록된 논문이 없습니다.</p>`}</div>
+  <div class="home-sec"><div class="sec-h"><h2>News${hasNew("news")?DOT:""}</h2><a href="#news">전체 보기 →</a></div>${!S.loaded?loading():N.length?`<ul class="nlist">${N.map(p=>`<li><a href="#news" data-open="${p.id}"><time>${fmt(p.date||p.createdAt)}</time>${p.kind?`<span class="tag">${esc(p.kind)}</span>`:""}<span class="nl-t">${NTAG(p,"news")}${esc(p.title)}</span></a></li>`).join("")}</ul>`:`<p class="empty">등록된 소식이 없습니다.</p>`}</div>`;
 }
 
 /* Members: 지도교수 / 박사 / 박사수료 / 재학생 — 각각 한 페이지 */
@@ -310,7 +331,7 @@ function renderProjects(){
   const all=S.posts.filter(p=>p.board==="research"&&p.kind==="공동연구과제").map(p=>Object.assign({},p,{_:projInfo(p)}))
     .sort((a,c)=>String(c._.period).localeCompare(String(a._.period))||(Number(c.year)||0)-(Number(a.year)||0));
   const row=(k,v)=>v?`<div><dt>${k}</dt><dd>${v}</dd></div>`:"";
-  const item=p=>`<li class="proj"><div class="proj-t">${esc(p.title)}${S.canEdit?` <button class="lnk" data-edit="${p.id}">수정</button>`:""}</div>
+  const item=p=>`<li class="proj"><div class="proj-t">${NTAG(p,"projects")}${esc(p.title)}${S.canEdit?` <button class="lnk" data-edit="${p.id}">수정</button>`:""}</div>
     <dl class="proj-i">${row("기간",esc(p._.period))}${row("발주기관",esc(p.venue))}${row("참여 연구자",esc(p.authors))}${row("내용",p._.body?esc(p._.body):"")}</dl>
     ${S.canEdit&&!p._.body?`<p class="hint">관리자: ‘수정’을 눌러 간단한 설명과 참여 연구자를 넣어 주세요.</p>`:""}</li>`;
   const sec=(t,en,list)=>`<section class="grp"><h3>${t} <small>${en}</small></h3>${list.length?`<ul class="projs">${list.map(item).join("")}</ul>`:`<p class="empty">${S.loaded?"해당 연구가 없습니다.":"불러오는 중…"}</p>`}</section>`;
