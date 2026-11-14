@@ -275,7 +275,8 @@ td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 .tl{list-style:none;margin:0;padding:0}
 .tl li{display:grid;grid-template-columns:170px minmax(0,1fr);gap:16px;padding:11px 0;border-bottom:1px solid var(--line);font-size:15.5px}
 .tl-d{color:var(--gold);font-weight:600;font-variant-numeric:tabular-nums;font-size:14.5px}
-@media (max-width:560px){.tl li{grid-template-columns:1fr;gap:2px}}
+.tl li.tl-head{padding:8px 0;font-size:13px;font-weight:700;color:var(--muted);border-bottom:2px solid var(--line)}
+@media (max-width:560px){.tl li{grid-template-columns:1fr;gap:2px}.tl li.tl-head{display:none}}
 .grp-h{margin-bottom:22px}
 .grp-h h2{margin:0;font-size:24px;font-weight:800;color:var(--navy)}
 .grp-h h2 small{font-size:14px;color:var(--faint);font-weight:500;margin-left:6px}
@@ -326,15 +327,12 @@ td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 .al-y{font-size:13.5px;color:var(--muted);margin-top:1px;font-variant-numeric:tabular-nums}
 .mact{display:inline-flex;gap:8px;margin-left:8px;vertical-align:1px}.mact .lnk{font-size:12px}
 
-/* 재학생·수료생: 기수별로 한 줄씩 */
-.gens{border-top:1px solid var(--line)}
-.gen{display:grid;grid-template-columns:90px minmax(0,1fr);gap:16px;align-items:baseline;padding:16px 2px;border-bottom:1px solid var(--line)}
-.gen-h{font-size:17px;font-weight:800;color:var(--gold);font-variant-numeric:tabular-nums}
-.gen-n{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px 26px}
-.gen-n li{font-size:17px;font-weight:600}
-@media (max-width:560px){.gen{grid-template-columns:64px minmax(0,1fr);gap:10px}.gen-n{gap:4px 18px}.gen-n li,.gen-h{font-size:16px}}
+/* 박사재학생·수료생: 기수 없이 이름만 나열 */
+.names{list-style:none;margin:0;padding:18px 2px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:12px 30px}
+.names li{font-size:17px;font-weight:600}
+@media (max-width:560px){.names{gap:8px 20px}.names li{font-size:16px}}
 
-/* 관리자: 재학생 → 수료 이동 단추 */
+/* 관리자: 박사재학생 → 수료 이동 단추 */
 .lnk.move{color:var(--navy-2);font-weight:700}
 .gen-n li.gen-all{font-size:13px;font-weight:600}
 .gen-n li.gen-all .lnk{font-size:13px;border:1px solid var(--line);border-radius:999px;padding:3px 10px}
