@@ -14,3 +14,6 @@ insert into public.members (name, course, org)
 select '신창국', '박사', '한국시덴티제약'
  where not exists (select 1 from public.members m where m.name = '신창국');
 update public.members set course = '박사', org = coalesce(org, '한국시덴티제약') where name = '신창국';
+
+-- 3) 최창원: 수료생 명단에서 삭제
+delete from public.members where name = '최창원' and course = '박사수료';
